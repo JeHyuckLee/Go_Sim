@@ -30,6 +30,6 @@ func (b *Behaviormodel) Update_state(name string, deadline float64) { //deadline
 
 func NewBehaviorModel(name string) *Behaviormodel {
 	b := Behaviormodel{}
-	b.coreModel = definition.NewCoreModel(name, 0)
+	b.coreModel = definition.NewCoreModel(name, definition.BEHAVIORAL)
 	return &b
 }
