@@ -24,6 +24,7 @@ func (c *CoreModel) Retrieve_input_port() []string {
 func (c *CoreModel) Insert_output_port(port string) {
 	c._output_ports = append(c._output_ports, port)
 }
+
 func (c *CoreModel) Retrieve_output_port() []string {
 	return c._output_ports
 }

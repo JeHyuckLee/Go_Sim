@@ -9,7 +9,7 @@ type AttributeType struct {
 	aType map[string]int
 }
 
-const Infinite = math.Inf(1)
+const Infinite float64 = math.Inf(1) //양의 무한대
 
 const (
 	SIMULATION_IDLE       = 0

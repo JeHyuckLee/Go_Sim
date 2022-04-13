@@ -14,16 +14,18 @@ type Behaviormodel struct {
 	coreModel                     *definition.CoreModel
 }
 
-func (b *Behaviormodel) Insert_state(name string, deadline float64) {
-	deadline = math.Inf(1)
+func (b *Behaviormodel) Insert_state(name string, deadline float64) { //deadline 디폴트값 = 0
+	if deadline == 0 {
+		deadline = math.Inf(1)
+	}
 	b._states[name] = deadline
-
 }
 
-func (b *Behaviormodel) Update_state(name string, deadline float64) {
-	deadline = math.Inf(1)
+func (b *Behaviormodel) Update_state(name string, deadline float64) { //deadline 디폴트값 = 0
+	if deadline == 0 {
+		deadline = math.Inf(1)
+	}
 	b._states[name] = deadline
-
 }
 
 func NewBehaviorModel(name string) *Behaviormodel {
