@@ -13,9 +13,9 @@ type BehaviorModelExecutor struct {
 
 	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
 	engine_name         string
+	_cur_state          string
 	_instance_t         float64
 	_destruct_t         float64
-	_cur_state          string
 	_next_event_t       float64
 	requestedTime       float64
 }
@@ -89,6 +89,13 @@ func (b *BehaviorModelExecutor) Get_req_time() float64 {
 }
 
 func NewExecutor(instantiate_time, destruct_time float64, name, engine_name string) *BehaviorModelExecutor {
+	if instantiate_time == 0 {
+		instantiate_time = math.Inf(1)
+	}
+	if destruct_time == 0 {
+		destruct_time = math.Inf(1)
+	}
+
 	b := BehaviorModelExecutor{}
 	b.engine_name = engine_name
 	b._instance_t = instantiate_time
