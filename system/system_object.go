@@ -19,11 +19,10 @@ func NewSysObject() *SysObject {
 	sy.__created_time = time.Now().String()
 	sy.__object_id = sy.__GLOBAL_OBJECT_ID
 	sy.__GLOBAL_OBJECT_ID = sy.__GLOBAL_OBJECT_ID + 1
-	sy.__object_id_other = 0
 	return &sy
 }
 
-func (sy *SysObject) String() string {
+func (sy SysObject) String() string {
 	return fmt.Sprintf("ID:%10d %s", sy.__object_id, sy.__created_time)
 }
 
@@ -35,10 +34,10 @@ func get_req_time(sy *SysObject) {
 	return
 }
 
-func (sy *SysObject) __lt__() bool {
-	return sy.__object_id < sy.__object_id_other
+func (sy SysObject) __lt__(other SysObject) bool {
+	return sy.__object_id < other.__object_id
 }
 
-func (sy *SysObject) get_obj_id() int {
+func (sy SysObject) Get_obj_id() int {
 	return sy.__object_id
 }
