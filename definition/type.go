@@ -1,10 +1,15 @@
 package definition
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 type AttributeType struct {
 	aType map[string]int
 }
+
+const Infinite = math.Inf(1)
 
 const (
 	SIMULATION_IDLE       = 0

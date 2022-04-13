@@ -1,6 +1,9 @@
 package behaviormodel
 
-import system_object "evsim_golang/system"
+import (
+	system_object "evsim_golang/system"
+	"math"
+)
 
 type BehaviorModelExecutor struct {
 	sysobject     *system_object.SysObject
@@ -13,6 +16,10 @@ type BehaviorModelExecutor struct {
 	_cur_state          string
 	_next_event_t       int
 	requestedTime       float64
+}
+
+func (b* BehaviorModelExecutor) String() string{
+	return ""
 }
 
 func (b *BehaviorModelExecutor) Cancel_rescheduling() {
@@ -50,11 +57,12 @@ func (b *BehaviorModelExecutor) Output() {
 
 }
 
-func (b *BehaviorModelExecutor) Time_advance(port, msg string) {
+func (b *BehaviorModelExecutor) Time_advance() {
 
 }
-func (b *BehaviorModelExecutor) Set_req_time(port, msg string) {
-
+func (b *BehaviorModelExecutor) Set_req_time(global_time float64, elapsed_time int) {
+	elapsed_time = 0
+	if b.Time_advance() == 
 }
 func (b *BehaviorModelExecutor) Get_req_time(port, msg string) {
 
@@ -67,5 +75,6 @@ func NewExecutor(instantiate_time, destruct_time float64, name, engine_name stri
 	b._destruct_t = destruct_time
 	b.sysobject = system_object.NewSysObject()
 	b.behaviormodel = NewBehaviorModel(name)
+	b.requestedTime = math.Inf(1)
 	return &b
 }
