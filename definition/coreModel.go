@@ -1,7 +1,7 @@
 package definition
 
 type CoreModel struct {
-	_type         string
+	_type         int
 	_name         string
 	_intput_ports []string
 	_output_ports []string
@@ -28,11 +28,11 @@ func (c *CoreModel) Retrieve_output_port() []string {
 	return c._output_ports
 }
 
-func (c *CoreModel) Get_type() string {
+func (c *CoreModel) Get_type() int {
 	return c._type
 }
 
-func NewCoreModel(_name, _type string) *CoreModel {
+func NewCoreModel(_name string, _type int) *CoreModel {
 	c := CoreModel{}
 	c._name = _name
 	c._type = _type
