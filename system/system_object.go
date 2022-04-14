@@ -26,11 +26,11 @@ func (sy SysObject) String() string {
 	return fmt.Sprintf("ID:%10d %s", sy.__object_id, sy.__created_time)
 }
 
-func set_req_time(sy *SysObject) {
+func Set_req_time(sy *SysObject) {
 	return
 }
 
-func get_req_time(sy *SysObject) {
+func Get_req_time(sy *SysObject) {
 	return
 }
 
