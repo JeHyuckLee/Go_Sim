@@ -1,20 +1,27 @@
 package definition
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 type AttributeType struct {
 	aType map[string]int
 }
 
-const (
-	SIMULATION_IDLE       = 0
-	SIMULATION_RUNNING    = 1
-	SIMULATION_TERMINATED = 2
-	SIMULATION_PAUSE      = 3
-	SIMULATION_UNKNOWN    = -1
+var Infinite float64 = math.Inf(1) //양의 무한대
 
-	BEHAVIORAL = 0
-	STRUCTURAL = 1
+const ( //SimulationMode
+	SIMULATION_IDLE       = iota
+	SIMULATION_RUNNING    = iota
+	SIMULATION_TERMINATED = iota
+	SIMULATION_PAUSE      = iota
+	SIMULATION_UNKNOWN    = -1
+)
+
+const ( //ModelType
+	BEHAVIORAL = iota
+	STRUCTURAL = iota
 )
 
 func (a AttributeType) Resolve_type_form_str(name string) int {
@@ -25,7 +32,7 @@ func (a AttributeType) Resolve_type_form_str(name string) int {
 	} else {
 		return a.aType["UNKNOWN_TYPE"]
 	}
-	
+}
 
 func (a AttributeType) Resolve_type_from_enum(enum int) string {
 	if enum == a.aType["ASPECT"] {
