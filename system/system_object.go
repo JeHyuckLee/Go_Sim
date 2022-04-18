@@ -1,4 +1,4 @@
-package system_object
+package system
 
 import (
 	"fmt"
