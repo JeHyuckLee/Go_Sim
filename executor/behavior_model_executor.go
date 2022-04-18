@@ -1,15 +1,16 @@
-package model
+package executor
 
 import (
 	"evsim_golang/definition"
-	system_object "evsim_golang/system"
+	"evsim_golang/model"
+	"evsim_golang/system"
 	"fmt"
 	"math"
 )
 
 type BehaviorModelExecutor struct {
-	sysobject     *system_object.SysObject
-	behaviormodel *Behaviormodel
+	sysobject     *system.SysObject
+	Behaviormodel *model.Behaviormodel
 
 	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
 	engine_name         string
@@ -21,7 +22,7 @@ type BehaviorModelExecutor struct {
 }
 
 func (b *BehaviorModelExecutor) String() string {
-	return fmt.Sprintf("[N]:{%s}, [S]:{%s}", b.behaviormodel.coreModel.Get_name(), b._cur_state)
+	return fmt.Sprintf("[N]:{%s}, [S]:{%s}", b.Behaviormodel.CoreModel.Get_name(), b._cur_state)
 }
 
 func (b *BehaviorModelExecutor) Cancel_rescheduling() {
@@ -55,14 +56,15 @@ func (b *BehaviorModelExecutor) Ext_trans(port, msg string) {
 func (b *BehaviorModelExecutor) Int_trans(port, msg string) {
 
 }
+
 func (b *BehaviorModelExecutor) Output() {
 
 }
 
 func (b *BehaviorModelExecutor) Time_advance() float64 {
-	for key, _ := range b.behaviormodel._states {
+	for key, _ := range b.Behaviormodel.States {
 		if key == b._cur_state {
-			return b.behaviormodel._states[b._cur_state]
+			return b.Behaviormodel.States[b._cur_state]
 		}
 	}
 	return -1
@@ -100,8 +102,8 @@ func NewExecutor(instantiate_time, destruct_time float64, name, engine_name stri
 	b.engine_name = engine_name
 	b._instance_t = instantiate_time
 	b._destruct_t = destruct_time
-	b.sysobject = system_object.NewSysObject()
-	b.behaviormodel = NewBehaviorModel(name)
+	b.sysobject = system.NewSysObject()
+	b.Behaviormodel = model.NewBehaviorModel(name)
 	b.requestedTime = math.Inf(1)
 	return &b
 }
