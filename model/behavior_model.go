@@ -7,10 +7,6 @@ import (
 
 type Behaviormodel struct {
 	States                        map[string]float64
-	external_transition_map_tuple []string
-	external_transition_map_state []string
-	internal_transition_map_tuple []string
-	internal_transition_map_state []string
 	CoreModel                     *definition.CoreModel
 }
 

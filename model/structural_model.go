@@ -5,9 +5,6 @@ import "evsim_golang/definition"
 type StructuralModel struct {
 	name                         string
 	_models                      []string
-	external_input_coupling_map  map[string]interface{}
-	external_output_coupling_map map[string]interface{}
-	internal_coupling_map        map[string]interface{}
 	CoreModel                    *definition.CoreModel
 }
 

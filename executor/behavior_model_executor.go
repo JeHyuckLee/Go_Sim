@@ -15,9 +15,9 @@ type BehaviorModelExecutor struct {
 	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
 	engine_name         string
 	_cur_state          string
-	_instance_t         float64
-	_destruct_t         float64
-	_next_event_t       float64
+	Instance_t          float64
+	Destruct_t          float64
+	Next_event_t        float64
 	requestedTime       float64
 }
 
@@ -38,11 +38,11 @@ func (b *BehaviorModelExecutor) Set_engine_name(name string) {
 }
 
 func (b *BehaviorModelExecutor) Get_create_time() float64 {
-	return b._instance_t
+	return b.Instance_t
 }
 
 func (b *BehaviorModelExecutor) Get_destruct_time() float64 {
-	return b._destruct_t
+	return b.Instance_t
 }
 
 func (b *BehaviorModelExecutor) Init_state(state string) {
@@ -72,11 +72,11 @@ func (b *BehaviorModelExecutor) Time_advance() float64 {
 func (b *BehaviorModelExecutor) Set_req_time(global_time float64, elapsed_time int) {
 	elapsed_time = 0
 	if b.Time_advance() == definition.Infinite {
-		b._next_event_t = definition.Infinite
+		b.Next_event_t = definition.Infinite
 		b.requestedTime = definition.Infinite
 	} else {
 		if b._cancel_reshedule_f {
-			b.requestedTime = math.Min(b._next_event_t, global_time+b.Time_advance())
+			b.requestedTime = math.Min(b.Next_event_t, global_time+b.Time_advance())
 		} else {
 			b.requestedTime = global_time + b.Time_advance()
 		}
@@ -86,7 +86,7 @@ func (b *BehaviorModelExecutor) Get_req_time() float64 {
 	if b._cancel_reshedule_f {
 		b._cancel_reshedule_f = false
 	}
-	b._next_event_t = b.requestedTime
+	b.Next_event_t = b.requestedTime
 	return b.requestedTime
 }
 
@@ -100,8 +100,8 @@ func NewExecutor(instantiate_time, destruct_time float64, name, engine_name stri
 
 	b := BehaviorModelExecutor{}
 	b.engine_name = engine_name
-	b._instance_t = instantiate_time
-	b._destruct_t = destruct_time
+	b.Instance_t = instantiate_time
+	b.Destruct_t = destruct_time
 	b.sysobject = system.NewSysObject()
 	b.Behaviormodel = model.NewBehaviorModel(name)
 	b.requestedTime = math.Inf(1)
