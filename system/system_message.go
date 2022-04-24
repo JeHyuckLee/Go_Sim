@@ -5,17 +5,17 @@ type SysMessage struct {
 	_src      string
 	_dst      string
 	_msg_time int
-	_msg_list []string
+	_msg_list []interface{}
 }
 
-func (sm *SysMessage) Insert(msg string) {
+func (sm *SysMessage) Insert(msg interface{}) {
 	sm._msg_list = append(sm._msg_list, msg)
 }
 
-func (sm *SysMessage) Extend(_list []string) {
+func (sm *SysMessage) Extend(_list []interface{}) {
 	sm._msg_list = append(sm._msg_list, _list...)
 }
-func (sm *SysMessage) Retrieve() []string {
+func (sm *SysMessage) Retrieve() []interface{} {
 	return sm._msg_list
 }
 func (sm *SysMessage) Get_src() string {
