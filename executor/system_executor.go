@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"errors"
 	"evsim_golang/definition"
 	"evsim_golang/model"
 	"evsim_golang/my"
@@ -30,8 +31,13 @@ type SysExecutor struct {
 	waiting_obj_map    map[float64][]*BehaviorModelExecutor
 	active_obj_map     map[float64]*BehaviorModelExecutor
 	learn_module       interface{}
-	port_map           map[interface{}]interface{}
+	port_map           map[Object][][]Object
 	sim_init_time      time.Time
+}
+
+type Object struct {
+	object *BehaviorModelExecutor
+	port   string
 }
 
 func NewSysExecutor(_time_step int, _sim_name, _sim_mode string) *SysExecutor {
@@ -47,6 +53,7 @@ func NewSysExecutor(_time_step int, _sim_name, _sim_mode string) *SysExecutor {
 	se.sim_mode = _sim_mode
 	se.waiting_obj_map = make(map[float64][]*BehaviorModelExecutor)
 	se.active_obj_map = make(map[float64]*BehaviorModelExecutor)
+	se.port_map = make(map[Object][][]Object)
 	se.Register_entity(se.dmc.executor)
 	se.min_schedule_item = *deque.New()
 	se.output_event_queue = *deque.New()
@@ -82,12 +89,14 @@ func (se *SysExecutor) Create_entity() {
 		}
 		delete(se.waiting_obj_map, key)
 		// se.min_schedule_itme 정렬
+
 	}
 }
 
 func (se *SysExecutor) Destory_entity() {
 	if len(se.active_obj_map) != 0 {
 		var delete_lst []*BehaviorModelExecutor
+		// var port_del_lst []string
 		for _, agent := range se.active_obj_map {
 			if agent.Get_create_time() <= se.global_time { // int? float??
 				delete_lst = append(delete_lst, agent)
@@ -95,53 +104,71 @@ func (se *SysExecutor) Destory_entity() {
 		}
 		for _, v := range delete_lst {
 			delete(se.active_obj_map, float64(v.sysobject.Get_obj_id()))
-			port_del_lst
+			var port_del_lst []*Object
+			for k, v := range se.port_map {
+				if v[0][0] == 
+			}
 		}
-
-		// for _, v := range delete_lst {
-		// delete(se.active_obj_map, v.executor.sysobject.Get_obj_id())
-		// var port_del_lst []
-		// 	for key, value in self.port_map.items():
-		//             #print(value)
-		//             if value:
-		//                 if value[0][0] is agent:
-		//                     port_del_lst.append(key)
-
-		//         for key in port_del_lst:
-		//             del (self.port_map[key])
-		//         self.min_schedule_item.remove(agent)
-		// }
-
 	}
 }
 
-func (se *SysExecutor) Coupling_relation(src_obj, out_port, dst_obj, in_port interface{}) {
-
-	// for k,v := range se.port_map{
-	// 	if k == src_obj && v == dst_obj{
-	// 		se.port_map[(src_obj,dst_obj)].append((dst_obj,in_port))
-	// 	}else{
-	// 		se.port_map[(src_obj,out_port)] = [(dst_obj,in_port)]
-	// 	}
-	// }
-
-	// if (src_obj, out_port) in self.port_map:
-	//         self.port_map[(src_obj, out_port)].append((dst_obj, in_port))
-	//     else:
-	//         self.port_map[(src_obj, out_port)] = [(dst_obj, in_port)]
-}
-
-func (se *SysExecutor) _Coupling_relation(src, dst interface{}) {
-	_, bool := my.Map_Find(se.port_map, src)
-	if bool == true {
-		se.port_map[src] = dst
-	} else {
-		se.port_map[src] = dst
+func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor, out_port, in_port string) {
+	dst := Object{dst_obj, in_port}
+	b := func() bool {
+		for k, _ := range se.port_map {
+			if k.object == src_obj && k.port == out_port {
+				se.port_map[k] = append(se.port_map[k], dst)
+				return true //port_map 에 이미있으면 추가
+			}
+		}
+		return false
+	}()
+	if b == false { // 없으면 새로만든다.
+		src := Object{src_obj, out_port}
+		se.port_map[src] = append(se.port_map[src], dst)
 	}
 }
 
-func (se *SysExecutor) Single_output_handling(obj, msg interface{}) {
-	p := my.Pair{obj, msg} // msg[1].get_dst()
+// func (se *SysExecutor) _Coupling_relation(src, dst interface{}) {
+// 	_, bool := my.Map_Find(se.port_map, src)
+// 	if bool == true {
+// 		se.port_map[src] = dst
+// 	} else {
+// 		se.port_map[src] = dst
+// 	}
+// // }
+// type pair struct {
+// 	pair_object *obj
+// 	dst         string
+// }
+
+func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
+	pair := Object{obj, msg.Get_dst()}
+
+	b := func() bool {
+		for k, _ := range se.port_map {
+			if k.object == obj {
+				return true
+			}
+		}
+		return false
+	}()
+	if b == false {
+		dmc := Object{se.active_obj_map[float64(se.dmc.executor.sysobject.Get_obj_id())], "uncaught"}
+		se.port_map[pair] = append(se.port_map[pair], dmc)
+	}
+
+	dst := se.port_map[pair]
+	if dst == nil {
+		err := func() error {
+			return errors.New("Destination Not Found")
+		}
+		fmt.Println(err)
+	}
+
+	for k, v := range dst {
+
+	}
 
 	_, bool := my.Map_Find(se.port_map, p)
 	if bool == false {
@@ -249,6 +276,15 @@ func (se *SysExecutor) Simulate(_time float64) { //default = infinity
 	}
 
 }
+
+
+
+
+
+
+
+
+
 func (se *SysExecutor) Simulation_stop() {
 	se.global_time = 0
 	se.target_time = 0

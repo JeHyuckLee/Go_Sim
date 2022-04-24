@@ -1,9 +1,5 @@
 package my
 
-type Pair struct {
-	A, B interface{}
-}
-
 //슬라이스에서 특정한 값을 찾아 리턴
 func Slice_Find(slice []interface{}, val interface{}) (int, bool) {
 
