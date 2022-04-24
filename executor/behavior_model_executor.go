@@ -49,7 +49,7 @@ func (b *BehaviorModelExecutor) Init_state(state string) {
 	b._cur_state = state
 }
 
-func (b *BehaviorModelExecutor) Ext_trans(port, msg string) {
+func (b *BehaviorModelExecutor) Ext_trans(port string, msg interface{}) {
 
 }
 
@@ -57,8 +57,9 @@ func (b *BehaviorModelExecutor) Int_trans(port, msg string) {
 
 }
 
-func (b *BehaviorModelExecutor) Output() {
-
+func (b *BehaviorModelExecutor) Output() interface{} {
+	var something interface{}
+	return something
 }
 
 func (b *BehaviorModelExecutor) Time_advance() float64 {
