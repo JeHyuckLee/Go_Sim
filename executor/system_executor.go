@@ -7,6 +7,7 @@ import (
 	"evsim_golang/my"
 	"evsim_golang/system"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -94,19 +95,19 @@ func (se *SysExecutor) Create_entity() {
 }
 
 func (se *SysExecutor) Destory_entity() {
-	if len(se.active_obj_map) != 0 {
+	if len(se.active_obj_map) != 0 { //active obj map 에 obj 가 있으면
 		var delete_lst []*BehaviorModelExecutor
 		// var port_del_lst []string
 		for _, agent := range se.active_obj_map {
-			if agent.Get_create_time() <= se.global_time { // int? float??
-				delete_lst = append(delete_lst, agent)
+			if agent.Get_create_time() <= se.global_time { //active_obj_map을 순회하고,
+				delete_lst = append(delete_lst, agent) // 이미생성된 obj 들을 delete_lst에 담고
 			}
 		}
 		for _, agent := range delete_lst {
-			delete(se.active_obj_map, float64(agent.sysobject.Get_obj_id()))
+			delete(se.active_obj_map, float64(agent.sysobject.Get_obj_id())) // delete_lst를 순회하여 active_obj_map 에 있는 obj 를 지운다.
 			var port_del_lst []Object
 			for k, v := range se.port_map {
-				if v[0].object == agent {
+				if v[0].object == agent { //지운 obj 와 연결되어있는 port 를 port_map에서 지운다.
 					port_del_lst = append(port_del_lst, k)
 				}
 			}
@@ -114,6 +115,7 @@ func (se *SysExecutor) Destory_entity() {
 				delete(se.port_map, v)
 			}
 			//se.min_schedule_item.Remove(agent)
+			//mim_schedule_item에서도 지운다.
 		}
 	}
 }
@@ -147,6 +149,10 @@ func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor
 // 	pair_object *obj
 // 	dst         string
 // }
+type event_queue struct {
+	time float64
+	msg  interface{}
+}
 
 func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
 	pair := Object{obj, msg.Get_dst()}
@@ -165,43 +171,21 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	}
 
 	dst := se.port_map[pair]
-	if dst == nil {
+	if dst == nil { //도착지가없다
 		err := func() error {
 			return errors.New("Destination Not Found")
 		}
 		fmt.Println(err)
 	}
-
-	for k, v := range dst {
-
-	}
-
-	_, bool := my.Map_Find(se.port_map, p)
-	if bool == false {
-		// se.port_map[p] = [(se.active_obj_map[se.dmc.executor.sysobject.Get_obj_id()],"uncaught")]
-	}
-
-	for k, v := range se.port_map {
-		if k == p {
-			destination := v
-			if destination == nil {
-				fmt.Println("Destination Not Found")
-				fmt.Println(se.port_map)
-				// raise AssertionError
-			}
+	for _, v := range dst {
+		if v.object == nil {
+			e := event_queue{se.global_time, msg.Retrieve()}
+			se.output_event_queue.PushFront(e)
+		} else {
+			v.object.Ext_trans(v.port, msg.Retrieve())
+			v.object.Set_req_time(se.global_time, 0)
 		}
 	}
-	// if destination[0] is None:
-	//             self.output_event_queue.append(
-	//                 (self.global_time, msg[1].retrieve()))
-	// else:
-	// destination[0].ext_trans(destination[1], msg[1])
-	// while self.thread_flag:
-	//             time.sleep(0.001)
-
-	//         self.thread_flag = True
-	// destination[0].set_req_time(self.global_time)
-	// self.thread_flag = False
 }
 
 func (se *SysExecutor) output_handling(obj, msg interface{}) {
@@ -219,50 +203,29 @@ func (se *SysExecutor) Flattening(_model, _del_model, _del_coupling interface{})
 }
 
 func (se *SysExecutor) Init_sim() {
-	se.simulation_mode = definition.SIMULATION_RUNNING
-	var _del_model []*BehaviorModelExecutor
-	// var _del_coupling []
-	for _, model_list := range se.waiting_obj_map {
-		for modle := range model_list {
 
-		}
-	}
 }
 
 func (se *SysExecutor) Schedule() {
 	se.Create_entity()
 	se.Handle_external_input_event()
 
-	tuple_obj := se.min_schedule_item.PopFront()
+	tuple_obj := se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
 
-	// before = time.perf_counter()  # TODO: consider decorator
+	for {
+		t := math.Abs(tuple_obj.Get_req_time() - se.global_time) //req_time 과 global time 의 오차가 1e-9 보다 작으면 true
+		if t > 1e-9 {
+			break
+		}
+		msg := tuple_obj.Output()
+		if msg != nil {
+			// self.output_handling(tuple_obj, (self.global_time, msg))
+		}
+		// tuple_obj.Int_trans()
+		req_t := tuple_obj.Get_req_time()
+		tuple_obj.Set_req_time(req_t, 0)
 
-	//     while math.isclose(tuple_obj.get_req_time(),
-	//                        self.global_time,
-	//                        rel_tol=1e-9):
-	//         msg = tuple_obj.output()
-	//         if msg is not None:
-	//             self.output_handling(tuple_obj, (self.global_time, msg))
-
-	//         # Sender Scheduling
-	//         tuple_obj.int_trans()
-	//         req_t = tuple_obj.get_req_time()
-
-	//         tuple_obj.set_req_time(req_t)
-	//         self.min_schedule_item.append(tuple_obj)
-
-	//         self.min_schedule_item = deque(
-	//             sorted(self.min_schedule_item,
-	//                    key=lambda bm: bm.get_req_time()))
-
-	//         tuple_obj = self.min_schedule_item.popleft()
-
-	//     self.min_schedule_item.appendleft(tuple_obj)
-
-	//     after = time.perf_counter()
-	//     if self.sim_mode == "REAL_TIME":
-	//         time.sleep((lambda x: x if x > 0 else 0)(float(self.time_step) -
-	//                                                  float(after - before)))
+	}
 
 	se.global_time += float64(se.time_step)
 	se.Destory_entity()
