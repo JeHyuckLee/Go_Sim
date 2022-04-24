@@ -31,7 +31,7 @@ type SysExecutor struct {
 	waiting_obj_map    map[float64][]*BehaviorModelExecutor
 	active_obj_map     map[float64]*BehaviorModelExecutor
 	learn_module       interface{}
-	port_map           map[Object][][]Object
+	port_map           map[Object][]Object
 	sim_init_time      time.Time
 }
 
@@ -53,7 +53,7 @@ func NewSysExecutor(_time_step int, _sim_name, _sim_mode string) *SysExecutor {
 	se.sim_mode = _sim_mode
 	se.waiting_obj_map = make(map[float64][]*BehaviorModelExecutor)
 	se.active_obj_map = make(map[float64]*BehaviorModelExecutor)
-	se.port_map = make(map[Object][][]Object)
+	se.port_map = make(map[Object][]Object)
 	se.Register_entity(se.dmc.executor)
 	se.min_schedule_item = *deque.New()
 	se.output_event_queue = *deque.New()
@@ -102,12 +102,18 @@ func (se *SysExecutor) Destory_entity() {
 				delete_lst = append(delete_lst, agent)
 			}
 		}
-		for _, v := range delete_lst {
-			delete(se.active_obj_map, float64(v.sysobject.Get_obj_id()))
-			var port_del_lst []*Object
+		for _, agent := range delete_lst {
+			delete(se.active_obj_map, float64(agent.sysobject.Get_obj_id()))
+			var port_del_lst []Object
 			for k, v := range se.port_map {
-				if v[0][0] == 
+				if v[0].object == agent {
+					port_del_lst = append(port_del_lst, k)
+				}
 			}
+			for _, v := range port_del_lst {
+				delete(se.port_map, v)
+			}
+			//se.min_schedule_item.Remove(agent)
 		}
 	}
 }
@@ -276,14 +282,6 @@ func (se *SysExecutor) Simulate(_time float64) { //default = infinity
 	}
 
 }
-
-
-
-
-
-
-
-
 
 func (se *SysExecutor) Simulation_stop() {
 	se.global_time = 0
