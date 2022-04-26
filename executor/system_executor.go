@@ -21,7 +21,7 @@ type SysExecutor struct {
 
 	global_time        float64
 	target_time        float64
-	time_step          int
+	time_step          time.Duration
 	EXTERNAL_SRC       string
 	EXTERNAL_DST       string
 	simulation_mode    int
@@ -41,7 +41,7 @@ type Object struct {
 	port   string
 }
 
-func NewSysExecutor(_time_step int, _sim_name, _sim_mode string) *SysExecutor {
+func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExecutor {
 	se := SysExecutor{}
 	se.behaviormodel = model.NewBehaviorModel(_sim_name)
 	se.dmc = NewDMC(0, definition.Infinite, "dc", "default")
@@ -49,7 +49,7 @@ func NewSysExecutor(_time_step int, _sim_name, _sim_mode string) *SysExecutor {
 	se.EXTERNAL_DST = "DST"
 	se.global_time = 0
 	se.target_time = 0
-	se.time_step = _time_step
+	se.time_step = _time_step.(time.Duration) * time.Second
 	se.simulation_mode = definition.SIMULATION_IDLE
 	se.sim_mode = _sim_mode
 	se.waiting_obj_map = make(map[float64][]*BehaviorModelExecutor)
@@ -89,7 +89,7 @@ func (se *SysExecutor) Create_entity() {
 			//슬라이스를 순회하여 obj 를 active_obj_map 에 넣는다.
 		}
 		delete(se.waiting_obj_map, key)
-		// se.min_schedule_itme 정렬
+		Custom_Sorted(se.min_schedule_item)
 
 	}
 }
@@ -135,6 +135,7 @@ func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor
 		src := Object{src_obj, out_port}
 		se.port_map[src] = append(se.port_map[src], dst)
 	}
+
 }
 
 // func (se *SysExecutor) _Coupling_relation(src, dst interface{}) {
@@ -211,7 +212,7 @@ func (se *SysExecutor) Schedule() {
 	se.Handle_external_input_event()
 
 	tuple_obj := se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
-
+	before := time.Now()
 	for {
 		t := math.Abs(tuple_obj.Get_req_time() - se.global_time) //req_time 과 global time 의 오차가 1e-9 보다 작으면 true
 		if t > 1e-9 {
@@ -224,23 +225,40 @@ func (se *SysExecutor) Schedule() {
 		// tuple_obj.Int_trans()
 		req_t := tuple_obj.Get_req_time()
 		tuple_obj.Set_req_time(req_t, 0)
+		se.min_schedule_item.PushFront(tuple_obj)
+		Custom_Sorted(se.min_schedule_item)
+		tuple_obj = se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
+	}
+	se.min_schedule_item.PushFront(tuple_obj)
+	after := time.Since(before)
+	if se.sim_mode == "REAL_TIME" {
+
+		x := se.time_step - after
+
+		if x < 0 {
+			time.Sleep(0)
+		} else {
+			time.Sleep(x)
+		}
 
 	}
-
 	se.global_time += float64(se.time_step)
 	se.Destory_entity()
 
 }
+
 func (se *SysExecutor) Simulate(_time float64) { //default = infinity
 	se.target_time = se.global_time + _time
 	se.Init_sim()
 
 	for se.global_time < se.target_time {
-		// if not self.waiting_obj_map:
-		// if self.min_schedule_item[0].get_req_time(
-		// ) == Infinite and self.sim_mode == 'VIRTUAL_TIME':
-		// 	self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
-
+		if se.waiting_obj_map == nil {
+			item := se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
+			if item.Get_req_time() == definition.Infinite && se.sim_mode == "VIRTURE_TIME" {
+				se.simulation_mode = definition.SIMULATION_TERMINATED
+				break
+			}
+		}
 		se.Schedule()
 	}
 
