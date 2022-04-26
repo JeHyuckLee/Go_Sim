@@ -329,7 +329,6 @@ func (se *SysExecutor) Schedule() {
 	se.Destory_entity()
 
 }
-
 func (se *SysExecutor) Simulate(_time float64) { //default = infinity
 	se.target_time = se.global_time + _time
 	se.Init_sim()
