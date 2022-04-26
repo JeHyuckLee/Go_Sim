@@ -1,0 +1,4 @@
+github.com/gammazero/deque v0.1.1 h1:xRVkDuSvDmFuMGf3IquHuRc2jlL0+v/WpFCWaauzwbE=
+github.com/gammazero/deque v0.1.1/go.mod h1:KQw7vFau1hHuM8xmI9RbgKFbAsQFWmBpqQ2KenFLk6M=
+gopkg.in/getlantern/deepcopy.v1 v1.0.0-20140913144530-b923171e8640 h1:fAfAHq363jp6NTMDHNe4EhfiIBPRR0JFJuBefZyVLaM=
+gopkg.in/getlantern/deepcopy.v1 v1.0.0-20140913144530-b923171e8640/go.mod h1:FeLAK3+BLfs7XMpGW8/75D+a2nq5bemZgvOR5BkhcYA=

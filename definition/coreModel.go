@@ -3,7 +3,7 @@ package definition
 type CoreModel struct {
 	_type         int
 	_name         string
-	_intput_ports []string
+	Intput_ports  []string
 	_output_ports []string
 }
 
@@ -15,10 +15,10 @@ func (c *CoreModel) Get_name() string {
 	return c._name
 }
 func (c *CoreModel) Insert_input_port(port string) {
-	c._intput_ports = append(c._intput_ports, port)
+	c.Intput_ports = append(c.Intput_ports, port)
 }
-func (c *CoreModel) Retrieve_input_port() []string {
-	return c._intput_ports
+func (c *CoreModel) RetrieveInput_port() []string {
+	return c.Intput_ports
 }
 
 func (c *CoreModel) Insert_output_port(port string) {
