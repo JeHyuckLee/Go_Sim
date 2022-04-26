@@ -41,6 +41,11 @@ type Object struct {
 	port   string
 }
 
+type event_queue struct {
+	time float64
+	msg  interface{}
+}
+
 type input_heap []event_queue
 
 func (eq input_heap) Len() int {
@@ -68,6 +73,7 @@ func (eq *input_heap) Pop() interface{} {
 	return elem
 }
 
+//생성자
 func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExecutor {
 	se := SysExecutor{}
 	se.behaviormodel = model.NewBehaviorModel(_sim_name)
@@ -180,10 +186,6 @@ func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor
 // 	pair_object *obj
 // 	dst         string
 // }
-type event_queue struct {
-	time float64
-	msg  interface{}
-}
 
 func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
 	pair := Object{obj, msg.Get_dst()}
@@ -205,7 +207,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	if dst == nil { //도착지가없다
 		err := func() error {
 			return errors.New("Destination Not Found")
-		}
+		}()
 		fmt.Println(err)
 	}
 	for _, v := range dst {
@@ -217,20 +219,6 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 			v.object.Set_req_time(se.global_time, 0)
 		}
 	}
-}
-
-func (se *SysExecutor) output_handling(obj, msg interface{}) {
-	if !(msg == nil) {
-		// if type(msg) == list:
-		//         for ith_msg in msg:
-		//             self.single_output_handling(obj, copy.deepcopy(ith_msg))
-		//     else:
-		//         self.single_output_handling(obj, msg)
-	}
-}
-
-func (se *SysExecutor) Flattening(_model, _del_model, _del_coupling interface{}) {
-
 }
 
 func (se *SysExecutor) Init_sim() {
@@ -307,13 +295,13 @@ func (se *SysExecutor) Simulation_stop() {
 	se.Register_entity(se.dmc.executor)
 }
 
-func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, scheduled_time int) {
+func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, scheduled_time float64) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Insert(_msg)
 	_, bool := Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
 	if bool == true {
 		//lock.acquire
-		eq := event_queue{float64(scheduled_time) + se.global_time, sm}
+		eq := event_queue{scheduled_time + se.global_time, sm}
 		heap.Push(&se.input_event_queue, eq)
 		//lock.release()
 	} else {
@@ -322,15 +310,15 @@ func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, sch
 
 }
 
-func (se *SysExecutor) Insert_custom_external_event(_port string, _bodylist []string, scheduled_time interface{}) {
+func (se *SysExecutor) Insert_custom_external_event(_port string, _bodylist []interface{}, scheduled_time float64) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Extend(_bodylist)
-	_, bool := my.Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
+	_, bool := Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
 	if bool == true {
-		// self.lock.acquire()
-		// heapq.heappush(self.input_event_queue,
-		//                (scheduled_time + self.global_time, sm))
-		// self.lock.release()
+		//lock.acquire
+		eq := event_queue{scheduled_time + se.global_time, sm}
+		heap.Push(&se.input_event_queue, eq)
+		//lock.release()
 	} else {
 		fmt.Printf("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
 	}
@@ -360,7 +348,10 @@ func (se *SysExecutor) Handle_external_output_event() deque.Deque {
 	var event_lists deque.Deque
 	err := deepcopy.Copy(event_lists, se.output_event_queue)
 	if err != nil {
-
+		err := func() error {
+			return errors.New("can't Handle_external_output_event")
+		}()
+		fmt.Println(err)
 	}
 	se.output_event_queue.Clear()
 	return event_lists
