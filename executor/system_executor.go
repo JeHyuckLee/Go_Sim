@@ -150,7 +150,14 @@ func (se *SysExecutor) Destory_entity() {
 			for _, v := range port_del_lst {
 				delete(se.port_map, v)
 			}
-			//se.min_schedule_item.Remove(agent)
+			i := se.min_schedule_item.Index(func(i interface{}) bool {
+				if i == agent {
+					return true
+				} else {
+					return false
+				}
+			})
+			se.min_schedule_item.Remove(i)
 			//mim_schedule_item에서도 지운다.
 		}
 	}
@@ -171,7 +178,6 @@ func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor
 		src := Object{src_obj, out_port}
 		se.port_map[src] = append(se.port_map[src], dst)
 	}
-
 }
 
 // func (se *SysExecutor) _Coupling_relation(src, dst interface{}) {
@@ -221,10 +227,69 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	}
 }
 
-func (se *SysExecutor) Init_sim() {
-
+func (se *SysExecutor) output_handling(obj, msg interface{}) {
+	if !(msg == nil) {
+		// if type(msg) == list:
+		//         for ith_msg in msg:
+		//             self.single_output_handling(obj, copy.deepcopy(ith_msg))
+		//     else:
+		//         self.single_output_handling(obj, msg)
+	}
 }
 
+func (se *SysExecutor) Init_sim() {
+	se.simulation_mode = definition.SIMULATION_RUNNING
+
+	var _del_model map[float64]*BehaviorModelExecutor
+	var _del_coupling map[Object]Object
+
+	for _, model_list := range se.waiting_obj_map {
+		for _, model := range model_list {
+			if model.Behaviormodel.CoreModel.Get_type() == definition.STRUCTURAL {
+				// se.Flattening(model, _del_model, _del_coupling) //질문
+			}
+		}
+	}
+
+	for target, _model := range _del_model {
+		for _, model := range se.waiting_obj_map[target] {
+			if _model == model {
+				delete(se.waiting_obj_map, target)
+			}
+		}
+	}
+
+	for target, _model := range _del_coupling {
+		for _, model := range se.port_map[target] {
+			if _model == model {
+				delete(se.port_map, target)
+			}
+		}
+	}
+
+	if !(se.active_obj_map == nil) {
+		var min float64 = 0
+		for k, _ := range se.waiting_obj_map {
+			if k < min {
+				min = k
+			}
+		}
+		se.global_time = min
+	}
+
+	if !(se.min_schedule_item.Cap() == 0) {
+		for _, obj := range se.active_obj_map {
+			if obj.Time_advance() < 0 {
+				err := func() error {
+					return errors.New("You should give posistive real number for the deadline")
+				}()
+				fmt.Println(err)
+			}
+			obj.Set_req_time(se.global_time, 0)
+			se.min_schedule_item.PushBack(obj)
+		}
+	}
+}
 func (se *SysExecutor) Schedule() {
 	se.Create_entity()
 	se.Handle_external_input_event()
@@ -329,19 +394,17 @@ func (se *SysExecutor) Get_generated_event() deque.Deque {
 }
 
 func (se *SysExecutor) Handle_external_input_event() {
-	// event_list = [
-	//         ev for ev in self.input_event_queue if ev[0] <= self.global_time
-	//     ]
-	//     #print(event_list)
-	//     for event in event_list:
-	//         self.output_handling(None, event)
-	//         self.lock.acquire()
-	//         heapq.heappop(self.input_event_queue)
-	//         self.lock.release()
-
-	//     self.min_schedule_item = deque(
-	//         sorted(self.min_schedule_item, key=lambda bm: bm.get_req_time()))
-	//     pass
+	var event_list []event_queue
+	for _, ev := range se.input_event_queue {
+		if ev.time <= se.global_time {
+			event_list = append(event_list, ev)
+		}
+	}
+	for _, event := range event_list {
+		se.output_handling(nil, event)
+		heap.Pop(&se.input_event_queue)
+	}
+	Custom_Sorted(&se.min_schedule_item)
 }
 
 func (se *SysExecutor) Handle_external_output_event() deque.Deque {
