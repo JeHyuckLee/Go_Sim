@@ -1,10 +1,10 @@
 package executor
 
 import (
+	"container/heap"
 	"errors"
 	"evsim_golang/definition"
 	"evsim_golang/model"
-	"evsim_golang/my"
 	"evsim_golang/system"
 	"fmt"
 	"math"
@@ -26,7 +26,7 @@ type SysExecutor struct {
 	EXTERNAL_DST       string
 	simulation_mode    int
 	min_schedule_item  deque.Deque
-	input_event_queue  []string
+	input_event_queue  input_heap
 	output_event_queue deque.Deque
 	sim_mode           string
 	waiting_obj_map    map[float64][]*BehaviorModelExecutor
@@ -39,6 +39,33 @@ type SysExecutor struct {
 type Object struct {
 	object *BehaviorModelExecutor
 	port   string
+}
+
+type input_heap []event_queue
+
+func (eq input_heap) Len() int {
+	return len(eq)
+}
+
+func (eq input_heap) Less(i, j int) bool {
+	return false
+}
+
+func (eq input_heap) Swap(i, j int) {
+	eq[i], eq[j] = eq[j], eq[i]
+}
+
+func (eq *input_heap) Push(elem interface{}) {
+	*eq = append(*eq, elem.(event_queue))
+}
+
+func (eq *input_heap) Pop() interface{} {
+	old := *eq
+	n := len(old)
+	elem := old[n-1]
+	*eq = old[0 : n-1]
+
+	return elem
 }
 
 func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExecutor {
@@ -59,6 +86,9 @@ func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExe
 	se.min_schedule_item = *deque.New()
 	se.output_event_queue = *deque.New()
 	se.sim_init_time = time.Now()
+	se.input_event_queue = input_heap{}
+	heap.Init(&se.input_event_queue)
+	return &se
 }
 
 func (se SysExecutor) Get_global_time() float64 {
@@ -89,7 +119,7 @@ func (se *SysExecutor) Create_entity() {
 			//슬라이스를 순회하여 obj 를 active_obj_map 에 넣는다.
 		}
 		delete(se.waiting_obj_map, key)
-		Custom_Sorted(se.min_schedule_item)
+		Custom_Sorted(&se.min_schedule_item)
 
 	}
 }
@@ -226,7 +256,7 @@ func (se *SysExecutor) Schedule() {
 		req_t := tuple_obj.Get_req_time()
 		tuple_obj.Set_req_time(req_t, 0)
 		se.min_schedule_item.PushFront(tuple_obj)
-		Custom_Sorted(se.min_schedule_item)
+		Custom_Sorted(&se.min_schedule_item)
 		tuple_obj = se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
 	}
 	se.min_schedule_item.PushFront(tuple_obj)
@@ -268,31 +298,24 @@ func (se *SysExecutor) Simulation_stop() {
 	se.global_time = 0
 	se.target_time = 0
 	se.time_step = 1
-	for k := range se.waiting_obj_map {
-		delete(se.waiting_obj_map, k)
-	}
-	for k := range se.active_obj_map {
-		delete(se.active_obj_map, k)
-	}
-	for k := range se.port_map {
-		delete(se.port_map, k)
-	}
+	se.waiting_obj_map = make(map[float64][]*BehaviorModelExecutor)
+	se.active_obj_map = make(map[float64]*BehaviorModelExecutor)
+	se.port_map = make(map[Object][]Object)
 	se.min_schedule_item = *deque.New()
 	se.sim_init_time = time.Now()
 	se.dmc = NewDMC(0, definition.Infinite, "dc", "default")
 	se.Register_entity(se.dmc.executor)
-
 }
 
-func (se *SysExecutor) Insert_external_event(_port, _msg string, scheduled_time int) {
+func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, scheduled_time int) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Insert(_msg)
-	_, bool := my.Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
+	_, bool := Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
 	if bool == true {
-		// self.lock.acquire()
-		// heapq.heappush(self.input_event_queue,
-		//                (scheduled_time + self.global_time, sm))
-		// self.lock.release()
+		//lock.acquire
+		eq := event_queue{float64(scheduled_time) + se.global_time, sm}
+		heap.Push(&se.input_event_queue, eq)
+		//lock.release()
 	} else {
 		print("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
 	}

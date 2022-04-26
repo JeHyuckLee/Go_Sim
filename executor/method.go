@@ -1,4 +1,4 @@
-package my
+package executor
 
 import (
 	"math/rand"
