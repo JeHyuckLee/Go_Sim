@@ -2,17 +2,17 @@ package definition
 
 type CoreModel struct {
 	_type         int
-	_name         string
+	Name          string
 	Intput_ports  []string
 	_output_ports []string
 }
 
 func (c *CoreModel) Set_name(name string) {
-	name = c._name
+	c.Name = name
 }
 
 func (c *CoreModel) Get_name() string {
-	return c._name
+	return c.Name
 }
 func (c *CoreModel) Insert_input_port(port string) {
 	c.Intput_ports = append(c.Intput_ports, port)
@@ -35,7 +35,7 @@ func (c *CoreModel) Get_type() int {
 
 func NewCoreModel(_name string, _type int) *CoreModel {
 	c := CoreModel{}
-	c._name = _name
+	c.Name = _name
 	c._type = _type
 	return &c
 }

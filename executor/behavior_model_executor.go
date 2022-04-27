@@ -14,7 +14,7 @@ type BehaviorModelExecutor struct {
 
 	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
 	engine_name         string
-	_cur_state          string
+	Cur_state           string
 	Instance_t          float64
 	Destruct_t          float64
 	Next_event_t        float64
@@ -22,7 +22,7 @@ type BehaviorModelExecutor struct {
 }
 
 func (b *BehaviorModelExecutor) String() string {
-	return fmt.Sprintf("[N]:{%s}, [S]:{%s}", b.Behaviormodel.CoreModel.Get_name(), b._cur_state)
+	return fmt.Sprintf("[N]:{%s}, [S]:{%s}", b.Behaviormodel.CoreModel.Get_name(), b.Cur_state)
 }
 
 func (b *BehaviorModelExecutor) Cancel_rescheduling() {
@@ -46,7 +46,7 @@ func (b *BehaviorModelExecutor) Get_destruct_time() float64 {
 }
 
 func (b *BehaviorModelExecutor) Init_state(state string) {
-	b._cur_state = state
+	b.Cur_state = state
 }
 
 func (b *BehaviorModelExecutor) Ext_trans(port string, msg interface{}) {
@@ -57,15 +57,14 @@ func (b *BehaviorModelExecutor) Int_trans(port, msg string) {
 
 }
 
-func (b *BehaviorModelExecutor) Output() interface{} {
-	var something interface{}
+func (b *BehaviorModelExecutor) Output() *system.SysMessage {
+	var something *system.SysMessage
 	return something
 }
-
 func (b *BehaviorModelExecutor) Time_advance() float64 {
-	for key, _ := range b.Behaviormodel.States {
-		if key == b._cur_state {
-			return b.Behaviormodel.States[b._cur_state]
+	for key := range b.Behaviormodel.States {
+		if key == b.Cur_state {
+			return b.Behaviormodel.States[b.Cur_state]
 		}
 	}
 	return -1

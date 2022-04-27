@@ -16,7 +16,7 @@ import (
 
 type SysExecutor struct {
 	sysObject     *system.SysObject
-	behaviormodel *model.Behaviormodel
+	Behaviormodel *model.Behaviormodel
 	dmc           *DefaultMessageCatcher
 
 	global_time        float64
@@ -31,7 +31,6 @@ type SysExecutor struct {
 	sim_mode           string
 	waiting_obj_map    map[float64][]*BehaviorModelExecutor
 	active_obj_map     map[float64]*BehaviorModelExecutor
-	learn_module       interface{}
 	port_map           map[Object][]Object
 	sim_init_time      time.Time
 }
@@ -41,12 +40,17 @@ type Object struct {
 	port   string
 }
 
-type event_queue struct {
+type i_event_queue struct {
 	time float64
-	msg  interface{}
+	msg  *system.SysMessage
 }
 
-type input_heap []event_queue
+type o_event_queue struct {
+	time     float64
+	msg_list interface{}
+}
+
+type input_heap []i_event_queue
 
 func (eq input_heap) Len() int {
 	return len(eq)
@@ -61,7 +65,7 @@ func (eq input_heap) Swap(i, j int) {
 }
 
 func (eq *input_heap) Push(elem interface{}) {
-	*eq = append(*eq, elem.(event_queue))
+	*eq = append(*eq, elem.(i_event_queue))
 }
 
 func (eq *input_heap) Pop() interface{} {
@@ -76,7 +80,7 @@ func (eq *input_heap) Pop() interface{} {
 //생성자
 func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExecutor {
 	se := SysExecutor{}
-	se.behaviormodel = model.NewBehaviorModel(_sim_name)
+	se.Behaviormodel = model.NewBehaviorModel(_sim_name)
 	se.dmc = NewDMC(0, definition.Infinite, "dc", "default")
 	se.EXTERNAL_SRC = "SRC"
 	se.EXTERNAL_DST = "DST"
@@ -110,7 +114,7 @@ func (se *SysExecutor) Create_entity() {
 	if len(se.waiting_obj_map) != 0 {
 		key, value := func() (float64, []*BehaviorModelExecutor) {
 			var key float64 = 0
-			for k, _ := range se.waiting_obj_map {
+			for k := range se.waiting_obj_map {
 				if k < key {
 					key = k
 				}
@@ -163,10 +167,10 @@ func (se *SysExecutor) Destory_entity() {
 	}
 }
 
-func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor, out_port, in_port string) {
+func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_port string, dst_obj *BehaviorModelExecutor, in_port string) {
 	dst := Object{dst_obj, in_port}
 	b := func() bool {
-		for k, _ := range se.port_map {
+		for k := range se.port_map {
 			if k.object == src_obj && k.port == out_port {
 				se.port_map[k] = append(se.port_map[k], dst)
 				return true //port_map 에 이미있으면 추가
@@ -180,24 +184,11 @@ func (se *SysExecutor) Coupling_relation(src_obj, dst_obj *BehaviorModelExecutor
 	}
 }
 
-// func (se *SysExecutor) _Coupling_relation(src, dst interface{}) {
-// 	_, bool := my.Map_Find(se.port_map, src)
-// 	if bool == true {
-// 		se.port_map[src] = dst
-// 	} else {
-// 		se.port_map[src] = dst
-// 	}
-// // }
-// type pair struct {
-// 	pair_object *obj
-// 	dst         string
-// }
-
 func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
 	pair := Object{obj, msg.Get_dst()}
 
 	b := func() bool {
-		for k, _ := range se.port_map {
+		for k := range se.port_map {
 			if k.object == obj {
 				return true
 			}
@@ -218,7 +209,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	}
 	for _, v := range dst {
 		if v.object == nil {
-			e := event_queue{se.global_time, msg.Retrieve()}
+			e := o_event_queue{se.global_time, msg.Retrieve()}
 			se.output_event_queue.PushFront(e)
 		} else {
 			v.object.Ext_trans(v.port, msg.Retrieve())
@@ -227,49 +218,18 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	}
 }
 
-func (se *SysExecutor) output_handling(obj, msg interface{}) {
+func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
 	if !(msg == nil) {
-		// if type(msg) == list:
-		//         for ith_msg in msg:
-		//             self.single_output_handling(obj, copy.deepcopy(ith_msg))
-		//     else:
-		//         self.single_output_handling(obj, msg)
+		se.Single_output_handling(obj, msg)
 	}
 }
 
 func (se *SysExecutor) Init_sim() {
 	se.simulation_mode = definition.SIMULATION_RUNNING
 
-	var _del_model map[float64]*BehaviorModelExecutor
-	var _del_coupling map[Object]Object
-
-	for _, model_list := range se.waiting_obj_map {
-		for _, model := range model_list {
-			if model.Behaviormodel.CoreModel.Get_type() == definition.STRUCTURAL {
-				// se.Flattening(model, _del_model, _del_coupling) //질문
-			}
-		}
-	}
-
-	for target, _model := range _del_model {
-		for _, model := range se.waiting_obj_map[target] {
-			if _model == model {
-				delete(se.waiting_obj_map, target)
-			}
-		}
-	}
-
-	for target, _model := range _del_coupling {
-		for _, model := range se.port_map[target] {
-			if _model == model {
-				delete(se.port_map, target)
-			}
-		}
-	}
-
 	if !(se.active_obj_map == nil) {
 		var min float64 = 0
-		for k, _ := range se.waiting_obj_map {
+		for k := range se.waiting_obj_map {
 			if k < min {
 				min = k
 			}
@@ -303,7 +263,7 @@ func (se *SysExecutor) Schedule() {
 		}
 		msg := tuple_obj.Output()
 		if msg != nil {
-			// self.output_handling(tuple_obj, (self.global_time, msg))
+			se.output_handling(tuple_obj, msg)
 		}
 		// tuple_obj.Int_trans()
 		req_t := tuple_obj.Get_req_time()
@@ -363,10 +323,10 @@ func (se *SysExecutor) Simulation_stop() {
 func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, scheduled_time float64) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Insert(_msg)
-	_, bool := Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
+	_, bool := Slice_Find_string(se.Behaviormodel.CoreModel.Intput_ports, _port)
 	if bool == true {
 		//lock.acquire
-		eq := event_queue{scheduled_time + se.global_time, sm}
+		eq := i_event_queue{scheduled_time + se.global_time, sm}
 		heap.Push(&se.input_event_queue, eq)
 		//lock.release()
 	} else {
@@ -378,10 +338,10 @@ func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, sch
 func (se *SysExecutor) Insert_custom_external_event(_port string, _bodylist []interface{}, scheduled_time float64) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Extend(_bodylist)
-	_, bool := Slice_Find_string(se.behaviormodel.CoreModel.Intput_ports, _port)
+	_, bool := Slice_Find_string(se.Behaviormodel.CoreModel.Intput_ports, _port)
 	if bool == true {
 		//lock.acquire
-		eq := event_queue{scheduled_time + se.global_time, sm}
+		eq := i_event_queue{scheduled_time + se.global_time, sm}
 		heap.Push(&se.input_event_queue, eq)
 		//lock.release()
 	} else {
@@ -394,14 +354,15 @@ func (se *SysExecutor) Get_generated_event() deque.Deque {
 }
 
 func (se *SysExecutor) Handle_external_input_event() {
-	var event_list []event_queue
+	var event_list []i_event_queue
 	for _, ev := range se.input_event_queue {
 		if ev.time <= se.global_time {
 			event_list = append(event_list, ev)
 		}
 	}
 	for _, event := range event_list {
-		se.output_handling(nil, event)
+
+		se.output_handling(nil, event.msg)
 		heap.Pop(&se.input_event_queue)
 	}
 	Custom_Sorted(&se.min_schedule_item)
@@ -422,12 +383,4 @@ func (se *SysExecutor) Handle_external_output_event() deque.Deque {
 
 func (se *SysExecutor) Is_terminated() interface{} {
 	return se.simulation_mode == definition.SIMULATION_TERMINATED
-}
-
-func (se SysExecutor) Set_learning_module(learn_module interface{}) {
-	se.learn_module = learn_module
-}
-
-func (se *SysExecutor) Get_learning_module() interface{} {
-	return se.learn_module
 }
