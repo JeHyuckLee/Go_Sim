@@ -94,7 +94,7 @@ func NewProcessor() *Processor {
 }
 
 func main() {
-	se := NewSysSimulator()
+	se := executor.NewSysSimulator()
 	se.Register_engine("sname", "REAL_TIME", 1)
 	sim := se.Get_engine("sname")
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")

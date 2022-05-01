@@ -14,6 +14,24 @@ import (
 	"gopkg.in/getlantern/deepcopy.v1"
 )
 
+type Model interface {
+	Int_trans()
+	Ext_trans(port string, msg *system.SysMessage)
+	Output() *system.SysMessage
+}
+
+func Int_t(i Model) {
+	i.Int_trans()
+}
+
+func Ext_t(i Model, port string, msg *system.SysMessage) {
+	i.Ext_trans(port, msg)
+}
+
+func Out(i Model) *system.SysMessage {
+	return i.Output()
+}
+
 type SysExecutor struct {
 	sysObject     *system.SysObject
 	Behaviormodel *model.Behaviormodel
@@ -21,7 +39,7 @@ type SysExecutor struct {
 
 	global_time        float64
 	target_time        float64
-	time_step          time.Duration
+	time_step          float64
 	EXTERNAL_SRC       string
 	EXTERNAL_DST       string
 	simulation_mode    int
@@ -78,7 +96,7 @@ func (eq *input_heap) Pop() interface{} {
 }
 
 //생성자
-func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExecutor {
+func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecutor {
 	se := SysExecutor{}
 	se.Behaviormodel = model.NewBehaviorModel(_sim_name)
 	se.dmc = NewDMC(0, definition.Infinite, "dc", "default")
@@ -86,7 +104,7 @@ func NewSysExecutor(_time_step interface{}, _sim_name, _sim_mode string) *SysExe
 	se.EXTERNAL_DST = "DST"
 	se.global_time = 0
 	se.target_time = 0
-	se.time_step = _time_step.(time.Duration) * time.Second
+	se.time_step = _time_step
 	se.simulation_mode = definition.SIMULATION_IDLE
 	se.sim_mode = _sim_mode
 	se.waiting_obj_map = make(map[float64][]*BehaviorModelExecutor)
@@ -178,7 +196,7 @@ func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_por
 		}
 		return false
 	}()
-	if b == false { // 없으면 새로만든다.
+	if !b { // 없으면 새로만든다.
 		src := Object{src_obj, out_port}
 		se.port_map[src] = append(se.port_map[src], dst)
 	}
@@ -195,7 +213,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 		}
 		return false
 	}()
-	if b == false {
+	if !b {
 		dmc := Object{se.active_obj_map[float64(se.dmc.executor.sysobject.Get_obj_id())], "uncaught"}
 		se.port_map[pair] = append(se.port_map[pair], dmc)
 	}
@@ -212,7 +230,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 			e := o_event_queue{se.global_time, msg.Retrieve()}
 			se.output_event_queue.PushFront(e)
 		} else {
-			v.object.Ext_trans(v.port, msg.Retrieve())
+			Ext_t(v.object, v.port, msg) // msg.retrieve()
 			v.object.Set_req_time(se.global_time, 0)
 		}
 	}
@@ -227,7 +245,7 @@ func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.S
 func (se *SysExecutor) Init_sim() {
 	se.simulation_mode = definition.SIMULATION_RUNNING
 
-	if !(se.active_obj_map == nil) {
+	if se.active_obj_map != nil {
 		var min float64 = 0
 		for k := range se.waiting_obj_map {
 			if k < min {
@@ -237,7 +255,7 @@ func (se *SysExecutor) Init_sim() {
 		se.global_time = min
 	}
 
-	if !(se.min_schedule_item.Cap() == 0) {
+	if se.min_schedule_item.Cap() != 0 {
 		for _, obj := range se.active_obj_map {
 			if obj.Time_advance() < 0 {
 				err := func() error {
@@ -261,7 +279,8 @@ func (se *SysExecutor) Schedule() {
 		if t > 1e-9 {
 			break
 		}
-		msg := tuple_obj.Output()
+		msg := Out(tuple_obj)
+
 		if msg != nil {
 			se.output_handling(tuple_obj, msg)
 		}
@@ -276,16 +295,16 @@ func (se *SysExecutor) Schedule() {
 	after := time.Since(before)
 	if se.sim_mode == "REAL_TIME" {
 
-		x := se.time_step - after
+		x := se.time_step - float64(after)
 
 		if x < 0 {
 			time.Sleep(0)
 		} else {
-			time.Sleep(x)
+			// time.Sleep(x)
 		}
 
 	}
-	se.global_time += float64(se.time_step)
+	se.global_time += se.time_step
 	se.Destory_entity()
 
 }

@@ -49,11 +49,11 @@ func (b *BehaviorModelExecutor) Init_state(state string) {
 	b.Cur_state = state
 }
 
-func (b *BehaviorModelExecutor) Ext_trans(port string, msg interface{}) {
+func (b *BehaviorModelExecutor) Ext_trans(port string, msg *system.SysMessage) {
 
 }
 
-func (b *BehaviorModelExecutor) Int_trans(port, msg string) {
+func (b *BehaviorModelExecutor) Int_trans() {
 
 }
 
