@@ -8,9 +8,16 @@ import (
 	"math"
 )
 
+type Model interface {
+	Int_trans()
+	Ext_trans(port string, msg *system.SysMessage)
+	Output() *system.SysMessage
+}
+
 type BehaviorModelExecutor struct {
 	sysobject     *system.SysObject
 	Behaviormodel *model.Behaviormodel
+	Model
 
 	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
 	engine_name         string
@@ -49,18 +56,18 @@ func (b *BehaviorModelExecutor) Init_state(state string) {
 	b.Cur_state = state
 }
 
-func (b *BehaviorModelExecutor) Ext_trans(port string, msg *system.SysMessage) {
+// func (b *BehaviorModelExecutor) Ext_trans(port string, msg *system.SysMessage) {
 
-}
+// }
 
-func (b *BehaviorModelExecutor) Int_trans() {
+// func (b *BehaviorModelExecutor) Int_trans() {
 
-}
+// }
 
-func (b *BehaviorModelExecutor) Output() *system.SysMessage {
-	var something *system.SysMessage
-	return something
-}
+// func (b *BehaviorModelExecutor) Output() *system.SysMessage {
+// 	var something *system.SysMessage
+// 	return something
+// }
 func (b *BehaviorModelExecutor) Time_advance() float64 {
 	for key := range b.Behaviormodel.States {
 		if key == b.Cur_state {
@@ -70,7 +77,7 @@ func (b *BehaviorModelExecutor) Time_advance() float64 {
 	return -1
 }
 func (b *BehaviorModelExecutor) Set_req_time(global_time float64, elapsed_time int) {
-	elapsed_time = 0
+	//elapsed_time default = 0
 	if b.Time_advance() == definition.Infinite {
 		b.Next_event_t = definition.Infinite
 		b.requestedTime = definition.Infinite
