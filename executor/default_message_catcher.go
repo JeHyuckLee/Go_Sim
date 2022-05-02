@@ -2,6 +2,7 @@ package executor
 
 import (
 	"evsim_golang/definition"
+	"evsim_golang/system"
 )
 
 type DefaultMessageCatcher struct {
@@ -17,8 +18,16 @@ func NewDMC(instance_time, destruct_time float64, name, engine_name string) *Def
 	return &dmc
 }
 
-func (d *DefaultMessageCatcher) Ext_trans(port, msg string) {
+func (d *DefaultMessageCatcher) Ext_trans(port string, msg *system.SysMessage) {
 }
+func (d *DefaultMessageCatcher) Int_trans() {
+
+}
+
+// func output() *system.SysMessage {
+// 	msg := system.SysMessage{}
+// 	return &msg
+// }
 
 func (d *DefaultMessageCatcher) Time_advance() float64 {
 	return definition.Infinite

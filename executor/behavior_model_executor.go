@@ -8,7 +8,7 @@ import (
 	"math"
 )
 
-type Model interface {
+type AbstractModel interface {
 	Int_trans()
 	Ext_trans(port string, msg *system.SysMessage)
 	Output() *system.SysMessage
@@ -17,7 +17,7 @@ type Model interface {
 type BehaviorModelExecutor struct {
 	sysobject     *system.SysObject
 	Behaviormodel *model.Behaviormodel
-	Model
+	AbstractModel
 
 	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
 	engine_name         string
@@ -68,6 +68,7 @@ func (b *BehaviorModelExecutor) Init_state(state string) {
 // 	var something *system.SysMessage
 // 	return something
 // }
+
 func (b *BehaviorModelExecutor) Time_advance() float64 {
 	for key := range b.Behaviormodel.States {
 		if key == b.Cur_state {
@@ -97,7 +98,7 @@ func (b *BehaviorModelExecutor) Get_req_time() float64 {
 	return b.requestedTime
 }
 
-func NewExecutor(instantiate_time, destruct_time float64, name, engine_name string) *BehaviorModelExecutor {
+func NewExecutor(instantiate_time, destruct_time float64, name string, engine_name string) *BehaviorModelExecutor {
 	if instantiate_time == 0 {
 		instantiate_time = math.Inf(1)
 	}
@@ -105,12 +106,12 @@ func NewExecutor(instantiate_time, destruct_time float64, name, engine_name stri
 		destruct_time = math.Inf(1)
 	}
 
-	b := BehaviorModelExecutor{}
+	b := &BehaviorModelExecutor{}
 	b.engine_name = engine_name
 	b.Instance_t = instantiate_time
 	b.Destruct_t = destruct_time
 	b.sysobject = system.NewSysObject()
 	b.Behaviormodel = model.NewBehaviorModel(name)
 	b.requestedTime = math.Inf(1)
-	return &b
+	return b
 }
