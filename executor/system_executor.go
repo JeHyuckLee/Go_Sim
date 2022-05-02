@@ -14,24 +14,6 @@ import (
 	"gopkg.in/getlantern/deepcopy.v1"
 )
 
-type Model interface {
-	Int_trans()
-	Ext_trans(port string, msg *system.SysMessage)
-	Output() *system.SysMessage
-}
-
-func Int_t(i Model) {
-	i.Int_trans()
-}
-
-func Ext_t(i Model, port string, msg *system.SysMessage) {
-	i.Ext_trans(port, msg)
-}
-
-func Out(i Model) *system.SysMessage {
-	return i.Output()
-}
-
 type SysExecutor struct {
 	sysObject     *system.SysObject
 	Behaviormodel *model.Behaviormodel
@@ -131,7 +113,7 @@ func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 func (se *SysExecutor) Create_entity() {
 	if len(se.waiting_obj_map) != 0 {
 		key, value := func() (float64, []*BehaviorModelExecutor) {
-			var key float64 = 0
+			var key float64 = definition.Infinite
 			for k := range se.waiting_obj_map {
 				if k < key {
 					key = k
@@ -140,6 +122,7 @@ func (se *SysExecutor) Create_entity() {
 			value := se.waiting_obj_map[key]
 			return key, value
 		}() //key = create_time, value = obj의 슬라이스
+
 		for _, v := range value {
 			se.active_obj_map[float64(v.sysobject.Get_obj_id())] = v
 			v.Set_req_time(se.global_time, 0) //elpased ti
@@ -230,7 +213,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 			e := o_event_queue{se.global_time, msg.Retrieve()}
 			se.output_event_queue.PushFront(e)
 		} else {
-			Ext_t(v.object, v.port, msg) // msg.retrieve()
+			obj.Ext_trans(v.port, msg) // msg.retrieve()
 			v.object.Set_req_time(se.global_time, 0)
 		}
 	}
@@ -279,7 +262,7 @@ func (se *SysExecutor) Schedule() {
 		if t > 1e-9 {
 			break
 		}
-		msg := Out(tuple_obj)
+		msg := tuple_obj.Output()
 
 		if msg != nil {
 			se.output_handling(tuple_obj, msg)
@@ -342,8 +325,8 @@ func (se *SysExecutor) Simulation_stop() {
 func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, scheduled_time float64) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Insert(_msg)
-	_, bool := Slice_Find_string(se.Behaviormodel.CoreModel.Intput_ports, _port)
-	if bool == true {
+	_, b := Slice_Find_string(se.Behaviormodel.CoreModel.Intput_ports, _port)
+	if b {
 		//lock.acquire
 		eq := i_event_queue{scheduled_time + se.global_time, sm}
 		heap.Push(&se.input_event_queue, eq)
@@ -357,8 +340,8 @@ func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, sch
 func (se *SysExecutor) Insert_custom_external_event(_port string, _bodylist []interface{}, scheduled_time float64) {
 	sm := system.NewSysMessage("SRC", _port)
 	sm.Extend(_bodylist)
-	_, bool := Slice_Find_string(se.Behaviormodel.CoreModel.Intput_ports, _port)
-	if bool == true {
+	_, b := Slice_Find_string(se.Behaviormodel.CoreModel.Intput_ports, _port)
+	if b {
 		//lock.acquire
 		eq := i_event_queue{scheduled_time + se.global_time, sm}
 		heap.Push(&se.input_event_queue, eq)

@@ -42,6 +42,7 @@ func (g *Generator) Output() *system.SysMessage {
 func NewGenerator() *Generator {
 	gen := Generator{}
 	gen.executor = executor.NewExecutor(0, definition.Infinite, "Gen", "sname")
+	gen.executor.Model = &gen
 	gen.executor.Init_state("IDLE")
 	gen.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
 	gen.executor.Behaviormodel.Insert_state("SEND", 1)
@@ -85,6 +86,7 @@ func (p Processor) Output() *system.SysMessage {
 func NewProcessor() *Processor {
 	pro := Processor{}
 	pro.executor = executor.NewExecutor(0, definition.Infinite, "Proc", "sname")
+	pro.executor.Model = &pro
 	pro.executor.Init_state("IDLE")
 	pro.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
 	pro.executor.Behaviormodel.Insert_state("PROCESS", 2)
@@ -104,9 +106,9 @@ func main() {
 
 	sim.Register_entity(gen.executor)
 
-	sim.Register_entity(gen.executor)
+	sim.Register_entity(pro.executor)
 
-	sim.Coupling_relation(nil, "strart", gen.executor, "start")
+	sim.Coupling_relation(nil, "start", gen.executor, "start")
 	sim.Coupling_relation(gen.executor, "process", pro.executor, "process")
 	sim.Insert_external_event("start", nil, 0)
 	sim.Simulate(definition.Infinite)

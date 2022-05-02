@@ -39,7 +39,7 @@ func Map_Find(m map[interface{}]interface{}, val interface{}) (interface{}, bool
 func Custom_Sorted(list *deque.Deque) {
 	var A []*BehaviorModelExecutor
 	length := list.Len()
-	for i := 1; i <= length; i++ {
+	for i := 0; i < length-1; i++ {
 		A = append(A, list.PopFront().(*BehaviorModelExecutor))
 	}
 
