@@ -43,7 +43,7 @@ func Custom_Sorted(list *deque.Deque) {
 		A = append(A, list.PopFront().(*BehaviorModelExecutor))
 	}
 
-	quickSort(A)
+	A = quickSort(A)
 
 	for i := 0; i < length; i++ {
 		list.PushBack(A[i])

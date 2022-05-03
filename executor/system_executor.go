@@ -267,12 +267,10 @@ func (se *SysExecutor) Schedule() {
 
 	tuple_obj := se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
 	before := time.Now()
+	// t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
 
 	for {
-		// t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
-		// if t > 2 {
-		// 	break
-		// }
+
 		fmt.Println(tuple_obj)
 		msg := tuple_obj.Output()
 
