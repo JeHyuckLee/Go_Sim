@@ -3,9 +3,9 @@ package model
 import "evsim_golang/definition"
 
 type StructuralModel struct {
-	name                         string
-	_models                      []string
-	CoreModel                    *definition.CoreModel
+	name      string
+	_models   []string
+	CoreModel *definition.CoreModel
 }
 
 func NewStructuralModel(name string) *StructuralModel {
