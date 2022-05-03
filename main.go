@@ -16,8 +16,9 @@ type Generator struct {
 func (g *Generator) Ext_trans(port string, msg *system.SysMessage) {
 	fmt.Println("ext_trans")
 	if port == "start" {
-		fmt.Println("[gen][out]:", time.Now())
+		fmt.Println("[gen][in]:", time.Now())
 		g.executor.Cur_state = "MOVE"
+
 	}
 }
 

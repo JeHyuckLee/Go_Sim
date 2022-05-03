@@ -56,19 +56,6 @@ func (b *BehaviorModelExecutor) Init_state(state string) {
 	b.Cur_state = state
 }
 
-// func (b *BehaviorModelExecutor) Ext_trans(port string, msg *system.SysMessage) {
-
-// }
-
-// func (b *BehaviorModelExecutor) Int_trans() {
-
-// }
-
-// func (b *BehaviorModelExecutor) Output() *system.SysMessage {
-// 	var something *system.SysMessage
-// 	return something
-// }
-
 func (b *BehaviorModelExecutor) Time_advance() float64 {
 	for key := range b.Behaviormodel.States {
 		if key == b.Cur_state {
@@ -99,12 +86,13 @@ func (b *BehaviorModelExecutor) Get_req_time() float64 {
 }
 
 func NewExecutor(instantiate_time, destruct_time float64, name string, engine_name string) *BehaviorModelExecutor {
-	if instantiate_time == 0 {
-		instantiate_time = math.Inf(1)
-	}
-	if destruct_time == 0 {
-		destruct_time = math.Inf(1)
-	}
+
+	// if instantiate_time == 0 {
+	// 	instantiate_time = math.Inf(1)
+	// }
+	// if destruct_time == 0 {
+	// 	destruct_time = math.Inf(1)
+	// }
 
 	b := &BehaviorModelExecutor{}
 	b.engine_name = engine_name

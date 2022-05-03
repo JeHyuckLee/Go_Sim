@@ -39,13 +39,13 @@ func Map_Find(m map[interface{}]interface{}, val interface{}) (interface{}, bool
 func Custom_Sorted(list *deque.Deque) {
 	var A []*BehaviorModelExecutor
 	length := list.Len()
-	for i := 0; i < length-1; i++ {
+	for i := 0; i < length; i++ {
 		A = append(A, list.PopFront().(*BehaviorModelExecutor))
 	}
 
 	quickSort(A)
 
-	for i := 0; i < length-1; i++ {
+	for i := 0; i < length; i++ {
 		list.PushBack(A[i])
 	}
 }

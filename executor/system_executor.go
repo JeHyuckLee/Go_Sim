@@ -7,7 +7,6 @@ import (
 	"evsim_golang/model"
 	"evsim_golang/system"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -233,7 +232,6 @@ func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.S
 		se.Single_output_handling(obj, msg)
 	}
 }
-
 func (se *SysExecutor) Init_sim() {
 	fmt.Println("Init_sim")
 	se.simulation_mode = definition.SIMULATION_RUNNING
@@ -269,13 +267,13 @@ func (se *SysExecutor) Schedule() {
 
 	tuple_obj := se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
 	before := time.Now()
+
 	for {
-
-		t := math.Abs(tuple_obj.Get_req_time() - se.global_time) //req_time 과 global time 의 오차가 1e-9 보다 작으면 true
-
-		if t > 10 {
-			break
-		}
+		// t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
+		// if t > 2 {
+		// 	break
+		// }
+		fmt.Println(tuple_obj)
 		msg := tuple_obj.Output()
 
 		if msg != nil {
@@ -284,14 +282,35 @@ func (se *SysExecutor) Schedule() {
 		tuple_obj.Int_trans()
 		req_t := tuple_obj.Get_req_time()
 		tuple_obj.Set_req_time(req_t, 0)
-		se.min_schedule_item.PushFront(tuple_obj)
+		se.min_schedule_item.PushBack(tuple_obj)
+		var A []*BehaviorModelExecutor
+		length := se.min_schedule_item.Len()
+		for i := 0; i < length; i++ {
+			A = append(A, se.min_schedule_item.PopFront().(*BehaviorModelExecutor))
+		}
+		for i := 0; i < length; i++ {
+			se.min_schedule_item.PushBack(A[i])
+		}
+		fmt.Println(A)
 		Custom_Sorted(&se.min_schedule_item)
+		var B []*BehaviorModelExecutor
+		length = se.min_schedule_item.Len()
+		for i := 0; i < length; i++ {
+			B = append(B, se.min_schedule_item.PopFront().(*BehaviorModelExecutor))
+		}
+		for i := 0; i < length; i++ {
+			se.min_schedule_item.PushBack(B[i])
+		}
+		fmt.Println(B)
 		tuple_obj = se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
+		fmt.Println(tuple_obj)
 	}
+
 	se.min_schedule_item.PushFront(tuple_obj)
 	after := time.Since(before)
-	if se.sim_mode == "REAL_TIME" {
 
+	if se.sim_mode == "REAL_TIME" {
+		fmt.Println("real_time")
 		x := se.time_step - float64(after)
 		if x < 0 {
 			time.Sleep(0)
