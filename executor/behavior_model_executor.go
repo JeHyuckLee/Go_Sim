@@ -19,7 +19,7 @@ type BehaviorModelExecutor struct {
 	Behaviormodel *model.Behaviormodel
 	AbstractModel
 
-	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
+	_cancel_reshedule_f bool
 	engine_name         string
 	Cur_state           string
 	Instance_t          float64

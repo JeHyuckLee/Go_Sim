@@ -7,6 +7,7 @@ import (
 	"evsim_golang/model"
 	"evsim_golang/system"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -123,16 +124,16 @@ func (se *SysExecutor) Create_entity() {
 			value := se.waiting_obj_map[key]
 			return key, value
 		}() //key = create_time, value = obj의 슬라이스
-
-		for _, v := range value {
-			se.active_obj_map[float64(v.sysobject.Get_obj_id())] = v
-			v.Set_req_time(se.global_time, 0) //elpased ti
-			se.min_schedule_item.PushFront(v)
-			//슬라이스를 순회하여 obj 를 active_obj_map 에 넣는다.
+		if key <= se.global_time {
+			for _, v := range value {
+				se.active_obj_map[float64(v.sysobject.Get_obj_id())] = v
+				v.Set_req_time(se.global_time, 0) //elpased ti
+				se.min_schedule_item.PushFront(v)
+				//슬라이스를 순회하여 obj 를 active_obj_map 에 넣는다.
+			}
+			delete(se.waiting_obj_map, key)
+			Custom_Sorted(&se.min_schedule_item)
 		}
-		delete(se.waiting_obj_map, key)
-		Custom_Sorted(&se.min_schedule_item)
-
 	}
 }
 
@@ -232,6 +233,7 @@ func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.S
 		se.Single_output_handling(obj, msg)
 	}
 }
+
 func (se *SysExecutor) Init_sim() {
 	fmt.Println("Init_sim")
 	se.simulation_mode = definition.SIMULATION_RUNNING
@@ -266,12 +268,16 @@ func (se *SysExecutor) Schedule() {
 	se.Handle_external_input_event()
 
 	tuple_obj := se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
-	before := time.Now()
-	// t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
+	// before := time.Now()
+
+	fmt.Println("global time :", se.global_time, "obj:", tuple_obj, "req_time :", tuple_obj.Get_req_time())
+	const epsilon = 1e-14
 
 	for {
-
-		fmt.Println(tuple_obj)
+		t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
+		if t > epsilon {
+			break
+		}
 		msg := tuple_obj.Output()
 
 		if msg != nil {
@@ -281,45 +287,29 @@ func (se *SysExecutor) Schedule() {
 		req_t := tuple_obj.Get_req_time()
 		tuple_obj.Set_req_time(req_t, 0)
 		se.min_schedule_item.PushBack(tuple_obj)
-		var A []*BehaviorModelExecutor
-		length := se.min_schedule_item.Len()
-		for i := 0; i < length; i++ {
-			A = append(A, se.min_schedule_item.PopFront().(*BehaviorModelExecutor))
-		}
-		for i := 0; i < length; i++ {
-			se.min_schedule_item.PushBack(A[i])
-		}
-		fmt.Println(A)
 		Custom_Sorted(&se.min_schedule_item)
-		var B []*BehaviorModelExecutor
-		length = se.min_schedule_item.Len()
-		for i := 0; i < length; i++ {
-			B = append(B, se.min_schedule_item.PopFront().(*BehaviorModelExecutor))
-		}
-		for i := 0; i < length; i++ {
-			se.min_schedule_item.PushBack(B[i])
-		}
-		fmt.Println(B)
 		tuple_obj = se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
-		fmt.Println(tuple_obj)
+
+		fmt.Println("obj : ", tuple_obj)
+		fmt.Println("req_time :", tuple_obj.Get_req_time())
 	}
 
 	se.min_schedule_item.PushFront(tuple_obj)
-	after := time.Since(before)
+	fmt.Println()
+	// after := time.Since(before)
 
-	if se.sim_mode == "REAL_TIME" {
-		fmt.Println("real_time")
-		x := se.time_step - float64(after)
-		if x < 0 {
-			time.Sleep(0)
-		} else {
-			//time.sleep(x)
-			time.Sleep(1 * time.Duration(x))
-		}
+	// if se.sim_mode == "REAL_TIME" {
+	// 	x := se.time_step - float64(after)
+	// 	if x < 0 {
+	// 		time.Sleep(0)
+	// 	} else {
+	// 		//time.sleep(x)
+	// 		time.Sleep(1 * time.Duration(x))
+	// 	}
 
-	}
+	// }
 	se.global_time += se.time_step
-	se.Destory_entity()
+	// se.Destory_entity()
 
 }
 
