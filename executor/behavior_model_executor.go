@@ -49,7 +49,7 @@ func (b *BehaviorModelExecutor) Get_create_time() float64 {
 }
 
 func (b *BehaviorModelExecutor) Get_destruct_time() float64 {
-	return b.Instance_t
+	return b.Destruct_t
 }
 
 func (b *BehaviorModelExecutor) Init_state(state string) {
