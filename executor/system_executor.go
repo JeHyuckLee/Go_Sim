@@ -143,7 +143,7 @@ func (se *SysExecutor) Destory_entity() {
 		var delete_lst []*BehaviorModelExecutor
 		// var port_del_lst []string
 		for _, agent := range se.active_obj_map {
-			if agent.Get_create_time() <= se.global_time { //active_obj_map을 순회하고,
+			if agent.Get_destruct_time() <= se.global_time { //active_obj_map을 순회하고,
 				delete_lst = append(delete_lst, agent) // 이미생성된 obj 들을 delete_lst에 담고
 			}
 		}
@@ -278,6 +278,7 @@ func (se *SysExecutor) Schedule() {
 		if t > epsilon {
 			break
 		}
+
 		msg := tuple_obj.Output()
 
 		if msg != nil {
@@ -289,7 +290,6 @@ func (se *SysExecutor) Schedule() {
 		se.min_schedule_item.PushBack(tuple_obj)
 		Custom_Sorted(&se.min_schedule_item)
 		tuple_obj = se.min_schedule_item.PopFront().(*BehaviorModelExecutor)
-
 		fmt.Println("obj : ", tuple_obj)
 		fmt.Println("req_time :", tuple_obj.Get_req_time())
 	}
@@ -309,7 +309,7 @@ func (se *SysExecutor) Schedule() {
 
 	// }
 	se.global_time += se.time_step
-	// se.Destory_entity()
+	se.Destory_entity()
 
 }
 
