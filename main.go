@@ -26,10 +26,10 @@ func (g *Generator) Ext_trans(port string, msg *system.SysMessage) {
 
 func (g *Generator) Int_trans() {
 	//fmt.Println("int_trans")
-	if g.executor.Cur_state == "SEND" && g.msg_list == nil {
+	if g.executor.Cur_state == "MOVE" && g.msg_list == nil {
 		g.executor.Cur_state = "IDLE"
 	} else {
-		g.executor.Cur_state = "SEND"
+		g.executor.Cur_state = "MOVE"
 	}
 }
 
@@ -39,7 +39,6 @@ func (g *Generator) Output() *system.SysMessage {
 	fmt.Println("[gen][out]:", time.Now())
 	msg.Insert(g.msg_list[0])
 	g.msg_list = remove(g.msg_list, 0)
-
 	return msg
 }
 
@@ -49,11 +48,10 @@ func NewGenerator() *Generator {
 	gen.executor.AbstractModel = &gen
 	gen.executor.Init_state("IDLE")
 	gen.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	gen.executor.Behaviormodel.Insert_state("SEND", 1)
 	gen.executor.Behaviormodel.Insert_state("MOVE", 1)
 	gen.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	gen.executor.Behaviormodel.CoreModel.Insert_output_port("process")
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		gen.msg_list = append(gen.msg_list, i)
 	}
 	return &gen
