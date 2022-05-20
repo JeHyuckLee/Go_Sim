@@ -51,7 +51,7 @@ func NewGenerator() *Generator {
 	gen.executor.Behaviormodel.Insert_state("MOVE", 1)
 	gen.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	gen.executor.Behaviormodel.CoreModel.Insert_output_port("process")
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		gen.msg_list = append(gen.msg_list, i)
 	}
 	return &gen
