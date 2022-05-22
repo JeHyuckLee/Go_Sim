@@ -5,6 +5,7 @@ import (
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
+	"runtime"
 	"time"
 )
 
@@ -14,29 +15,29 @@ type Generator struct {
 }
 
 func (g *Generator) Ext_trans(port string, msg *system.SysMessage) {
-	fmt.Println("ext_trans")
+	//fmt.Println("ext_trans")
 	if port == "start" {
-		fmt.Println("[gen][out]:", time.Now())
+		fmt.Println("[gen][in]:", time.Now())
+		g.executor.Cur_state = "MOVE"
+	}
+
+}
+
+func (g *Generator) Int_trans() {
+	//fmt.Println("int_trans")
+	if g.executor.Cur_state == "MOVE" && g.msg_list == nil {
+		g.executor.Cur_state = "IDLE"
+	} else {
 		g.executor.Cur_state = "MOVE"
 	}
 }
 
-func (g *Generator) Int_trans() {
-	fmt.Println("int_trans")
-	if g.executor.Cur_state == "SEND" && g.msg_list == nil {
-		g.executor.Cur_state = "IDLE"
-	} else {
-		g.executor.Cur_state = "SEND"
-	}
-}
-
 func (g *Generator) Output() *system.SysMessage {
-	fmt.Println("output")
+	//fmt.Println("output")
 	msg := system.NewSysMessage(g.executor.Behaviormodel.CoreModel.Get_name(), "process")
 	fmt.Println("[gen][out]:", time.Now())
 	msg.Insert(g.msg_list[0])
 	g.msg_list = remove(g.msg_list, 0)
-
 	return msg
 }
 
@@ -46,11 +47,12 @@ func NewGenerator() *Generator {
 	gen.executor.AbstractModel = &gen
 	gen.executor.Init_state("IDLE")
 	gen.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	gen.executor.Behaviormodel.Insert_state("SEND", 1)
 	gen.executor.Behaviormodel.Insert_state("MOVE", 1)
 	gen.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	gen.executor.Behaviormodel.CoreModel.Insert_output_port("process")
-	gen.msg_list = append(gen.msg_list, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+	for i := 0; i < 10; i++ {
+		gen.msg_list = append(gen.msg_list, i)
+	}
 	return &gen
 }
 
@@ -60,7 +62,7 @@ type Processor struct {
 }
 
 func (p *Processor) Ext_trans(port string, msg *system.SysMessage) {
-	fmt.Println("ext_trans")
+	//fmt.Println("ext_trans")
 	if port == "process" {
 		fmt.Println("[proc][in]", time.Now())
 		p.executor.Cancel_rescheduling()
@@ -71,7 +73,7 @@ func (p *Processor) Ext_trans(port string, msg *system.SysMessage) {
 }
 
 func (p *Processor) Int_trans() {
-	fmt.Println("int_trans")
+	//fmt.Println("int_trans")
 	if p.executor.Cur_state == "PROCESS" {
 		p.executor.Cur_state = "IDLE"
 	} else {
@@ -80,9 +82,11 @@ func (p *Processor) Int_trans() {
 }
 
 func (p Processor) Output() *system.SysMessage {
-	fmt.Println("output")
+	//fmt.Println("output")
 	fmt.Println("[proc][out]", time.Now())
 	fmt.Println(p.msg_list...)
+
+	fmt.Println("\nproc_output :", time.Since(executor.Start_time))
 	return nil
 }
 
@@ -99,20 +103,21 @@ func NewProcessor() *Processor {
 }
 
 func main() {
+	executor.Start_time = time.Now()
+	runtime.GOMAXPROCS(4)
 	se := executor.NewSysSimulator()
 	se.Register_engine("sname", "REAL_TIME", 1)
 	sim := se.Get_engine("sname")
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")
+	for i := 0; i < 2; i++ {
+		gen := NewGenerator()
+		pro := NewProcessor()
+		sim.Register_entity(gen.executor)
+		sim.Register_entity(pro.executor)
+		sim.Coupling_relation(nil, "start", gen.executor, "start")
+		sim.Coupling_relation(gen.executor, "process", pro.executor, "process")
+	}
 
-	gen := NewGenerator()
-	pro := NewProcessor()
-
-	sim.Register_entity(gen.executor)
-
-	sim.Register_entity(pro.executor)
-
-	sim.Coupling_relation(nil, "start", gen.executor, "start")
-	sim.Coupling_relation(gen.executor, "process", pro.executor, "process")
 	sim.Insert_external_event("start", nil, 0)
 	sim.Simulate(definition.Infinite)
 
