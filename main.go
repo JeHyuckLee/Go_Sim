@@ -5,10 +5,9 @@ import (
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
+	"runtime"
 	"time"
 )
-
-var start time.Time
 
 type Generator struct {
 	executor *executor.BehaviorModelExecutor
@@ -20,8 +19,8 @@ func (g *Generator) Ext_trans(port string, msg *system.SysMessage) {
 	if port == "start" {
 		fmt.Println("[gen][in]:", time.Now())
 		g.executor.Cur_state = "MOVE"
-
 	}
+
 }
 
 func (g *Generator) Int_trans() {
@@ -51,7 +50,7 @@ func NewGenerator() *Generator {
 	gen.executor.Behaviormodel.Insert_state("MOVE", 1)
 	gen.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	gen.executor.Behaviormodel.CoreModel.Insert_output_port("process")
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		gen.msg_list = append(gen.msg_list, i)
 	}
 	return &gen
@@ -87,10 +86,7 @@ func (p Processor) Output() *system.SysMessage {
 	fmt.Println("[proc][out]", time.Now())
 	fmt.Println(p.msg_list...)
 
-	t := time.Now()
-	fmt.Println("e time:", t)
-	elapsed := t.Sub(start)
-	fmt.Println("\nelapsed Time :", elapsed)
+	fmt.Println("\nproc_output :", time.Since(executor.Start_time))
 	return nil
 }
 
@@ -107,13 +103,13 @@ func NewProcessor() *Processor {
 }
 
 func main() {
+	executor.Start_time = time.Now()
+	runtime.GOMAXPROCS(8)
 	se := executor.NewSysSimulator()
-	start = time.Now()
-	fmt.Println("start:", start)
 	se.Register_engine("sname", "REAL_TIME", 1)
 	sim := se.Get_engine("sname")
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		gen := NewGenerator()
 		pro := NewProcessor()
 		sim.Register_entity(gen.executor)
