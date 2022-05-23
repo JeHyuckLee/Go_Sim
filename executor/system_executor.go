@@ -7,8 +7,6 @@ import (
 	"evsim_golang/model"
 	"evsim_golang/system"
 	"fmt"
-	"math"
-	"sort"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -25,7 +23,7 @@ type SysExecutor struct {
 	EXTERNAL_SRC       string
 	EXTERNAL_DST       string
 	simulation_mode    int
-	min_schedule_item  []*BehaviorModelExecutor
+	min_schedule_item  min_schedule_heap
 	input_event_queue  input_heap
 	output_event_queue []*o_event_queue
 	sim_mode           string
@@ -33,62 +31,6 @@ type SysExecutor struct {
 	active_obj_map     map[float64]*BehaviorModelExecutor
 	port_map           map[Object][]Object
 	sim_init_time      time.Time
-}
-
-// deque sort
-
-type schedule_item []*BehaviorModelExecutor
-
-func (s schedule_item) Len() int {
-	return len(s)
-}
-func (s schedule_item) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-func (s schedule_item) Less(i, j int) bool {
-	return s[i].Get_req_time() < s[j].Get_req_time()
-}
-
-type Object struct {
-	object *BehaviorModelExecutor
-	port   string
-}
-
-type i_event_queue struct {
-	time float64
-	msg  *system.SysMessage
-}
-
-type o_event_queue struct {
-	time     float64
-	msg_list interface{}
-}
-
-type input_heap []i_event_queue
-
-func (eq input_heap) Len() int {
-	return len(eq)
-}
-
-func (eq input_heap) Less(i, j int) bool {
-	return false
-}
-
-func (eq input_heap) Swap(i, j int) {
-	eq[i], eq[j] = eq[j], eq[i]
-}
-
-func (eq *input_heap) Push(elem interface{}) {
-	*eq = append(*eq, elem.(i_event_queue))
-}
-
-func (eq *input_heap) Pop() interface{} {
-	old := *eq
-	n := len(old)
-	elem := old[n-1]
-	*eq = old[0 : n-1]
-
-	return elem
 }
 
 //생성자
@@ -112,6 +54,9 @@ func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecuto
 	se.sim_init_time = time.Now()
 	se.input_event_queue = input_heap{}
 	heap.Init(&se.input_event_queue)
+	se.min_schedule_item = min_schedule_heap{}
+	heap.Init(&se.min_schedule_item)
+
 	return se
 }
 
@@ -122,7 +67,6 @@ func (se SysExecutor) Get_global_time() float64 {
 func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 	se.waiting_obj_map[sim_obj.Get_create_time()] = append(se.waiting_obj_map[sim_obj.Get_create_time()], sim_obj)
 	// waiting_obj_map 에 create_time 별로 슬라이스를 만들어서 sim_obj 를 append 한다.
-	fmt.Println("\n Register_entity :", time.Since(Start_time))
 }
 
 func (se *SysExecutor) Create_entity() {
@@ -141,16 +85,15 @@ func (se *SysExecutor) Create_entity() {
 			for _, v := range value {
 				se.active_obj_map[float64(v.sysobject.Get_obj_id())] = v
 				v.Set_req_time(se.global_time, 0) //elpased ti
-				se.min_schedule_item = append(se.min_schedule_item, v)
+				heap.Push(&se.min_schedule_item, v)
 				//슬라이스를 순회하여 obj 를 active_obj_map 에 넣는다.
 			}
 			delete(se.waiting_obj_map, key)
-
-			sort.Sort(schedule_item(se.min_schedule_item))
-
+			for i := 0; i < se.min_schedule_item.Len(); i++ {
+				fmt.Println("create_entity : ", se.min_schedule_item[i], se.min_schedule_item[i].Get_req_time())
+			}
 		}
 	}
-	fmt.Println("\n Create_entity :", time.Since(Start_time))
 }
 
 func (se *SysExecutor) Destory_entity() {
@@ -176,13 +119,13 @@ func (se *SysExecutor) Destory_entity() {
 			}
 			for i, v := range se.min_schedule_item {
 				if v == agent {
-					se.min_schedule_item = remove(se.min_schedule_item, i)
+					heap.Remove(&se.min_schedule_item, i)
 				}
 			}
 			//mim_schedule_item에서도 지운다.
 		}
 	}
-	fmt.Println("\n Destory_entity :", time.Since(Start_time))
+
 }
 
 func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_port string, dst_obj *BehaviorModelExecutor, in_port string) {
@@ -260,7 +203,7 @@ func (se *SysExecutor) Init_sim() {
 		se.global_time = 0
 	}
 
-	if len(se.min_schedule_item) != 0 {
+	if se.min_schedule_item.Len() == 0 {
 		for _, obj := range se.active_obj_map {
 			if obj.Time_advance() < 0 {
 				err := func() error {
@@ -269,7 +212,7 @@ func (se *SysExecutor) Init_sim() {
 				fmt.Println(err)
 			}
 			obj.Set_req_time(se.global_time, 0)
-			se.min_schedule_item = append(se.min_schedule_item, obj)
+			heap.Push(&se.min_schedule_item, obj)
 		}
 	}
 	fmt.Println("\n Init_sim :", time.Since(Start_time))
@@ -278,56 +221,35 @@ func (se *SysExecutor) Init_sim() {
 func (se *SysExecutor) Schedule() {
 	se.Create_entity()
 	se.Handle_external_input_event()
-
-	tuple_obj := se.min_schedule_item[0]
-	se.min_schedule_item = remove(se.min_schedule_item, 0)
-
-	// before := time.Now()
-
-	fmt.Println("global time :", se.global_time, "obj:", tuple_obj, "req_time :", tuple_obj.Get_req_time())
-
 	const epsilon = 1e-14
-	// start_time := time.Now()
-	for {
+	fmt.Println(se.min_schedule_item[0])
+	fmt.Println(se.min_schedule_item[0].Get_req_time())
+	if (se.min_schedule_item[0].Get_req_time() - se.global_time) > epsilon {
+		tuple_obj := heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
+		fmt.Println("global time :", se.global_time, "obj:", tuple_obj, "req_time :", tuple_obj.Get_req_time())
+		for {
+			msg := tuple_obj.Output()
 
-		t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
-		if t > epsilon {
-			break
+			if msg != nil {
+				fmt.Println(tuple_obj)
+				se.output_handling(tuple_obj, msg)
+			}
+
+			tuple_obj.Int_trans()
+			req_t := tuple_obj.Get_req_time()
+
+			tuple_obj.Set_req_time(req_t, 0)
+			heap.Push(&se.min_schedule_item, tuple_obj)
+
+			if (se.min_schedule_item[0].Get_req_time() - se.global_time) > epsilon {
+				break
+			}
+			tuple_obj := heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
+
+			fmt.Println("obj : ", tuple_obj)
+			fmt.Println("req_time :", tuple_obj.Get_req_time())
 		}
-
-		msg := tuple_obj.Output()
-
-		if msg != nil {
-			se.output_handling(tuple_obj, msg)
-		}
-		tuple_obj.Int_trans()
-		req_t := tuple_obj.Get_req_time()
-		tuple_obj.Set_req_time(req_t, 0)
-		se.min_schedule_item = append(se.min_schedule_item, tuple_obj)
-
-		sort.Sort(schedule_item(se.min_schedule_item))
-
-		tuple_obj = se.min_schedule_item[0]
-		se.min_schedule_item = remove(se.min_schedule_item, 0)
-
-		fmt.Println("obj : ", tuple_obj)
-		fmt.Println("req_time :", tuple_obj.Get_req_time())
 	}
-
-	se.min_schedule_item = append([]*BehaviorModelExecutor{tuple_obj}, se.min_schedule_item...)
-	fmt.Println()
-	// after := time.Since(before)
-
-	// if se.sim_mode == "REAL_TIME" {
-	// 	x := se.time_step - float64(after)
-	// 	if x < 0 {
-	// 		time.Sleep(0)
-	// 	} else {
-	// 		//time.sleep(x)
-	// 		time.Sleep(1 * time.Duration(x))
-	// 	}
-
-	// }
 	se.global_time += se.time_step
 	se.Destory_entity()
 	fmt.Println("\n Schedule :", time.Since(Start_time))
@@ -340,13 +262,10 @@ func (se *SysExecutor) Simulate(_time float64) { //default = infinity
 	se.Init_sim()
 	for se.global_time < se.target_time {
 		if se.waiting_obj_map == nil {
-			item := se.min_schedule_item[0]
-			se.min_schedule_item = remove(se.min_schedule_item, 0)
-			if item.Get_req_time() == definition.Infinite && se.sim_mode == "VIRTURE_TIME" {
+			if se.min_schedule_item[0].Get_req_time() == definition.Infinite && se.sim_mode == "VIRTURE_TIME" {
 				se.simulation_mode = definition.SIMULATION_TERMINATED
 				break
 			}
-			se.min_schedule_item = append([]*BehaviorModelExecutor{item}, se.min_schedule_item...)
 		}
 		se.Schedule()
 	}
@@ -361,6 +280,9 @@ func (se *SysExecutor) Simulation_stop() {
 	se.active_obj_map = make(map[float64]*BehaviorModelExecutor)
 	se.port_map = make(map[Object][]Object)
 	// se.min_schedule_item = *deque.New()
+	for i := 0; i < se.min_schedule_item.Len(); i++ {
+		heap.Remove(&se.min_schedule_item, i)
+	}
 	se.sim_init_time = time.Now()
 	se.dmc = NewDMC(0, definition.Infinite, "dc", "default")
 	se.Register_entity(se.dmc.executor)
@@ -416,8 +338,6 @@ func (se *SysExecutor) Handle_external_input_event() {
 		heap.Pop(&se.input_event_queue)
 
 	}
-
-	sort.Sort(schedule_item(se.min_schedule_item))
 	fmt.Println("\n Handle_external_input_event :", time.Since(Start_time))
 }
 
