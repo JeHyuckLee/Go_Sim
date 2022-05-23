@@ -260,7 +260,7 @@ func (se *SysExecutor) Init_sim() {
 		se.global_time = 0
 	}
 
-	if len(se.min_schedule_item) != 0 {
+	if len(se.min_schedule_item) == 0 {
 		for _, obj := range se.active_obj_map {
 			if obj.Time_advance() < 0 {
 				err := func() error {
