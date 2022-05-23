@@ -15,6 +15,7 @@ func (m min_schedule_heap) Less(i, j int) bool {
 }
 
 func (m *min_schedule_heap) Push(elem interface{}) {
+
 	*m = append(*m, elem.(*BehaviorModelExecutor))
 }
 

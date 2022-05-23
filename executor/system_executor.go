@@ -8,6 +8,7 @@ import (
 	"evsim_golang/system"
 	"fmt"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -34,6 +35,7 @@ type SysExecutor struct {
 	sim_init_time      time.Time
 }
 
+// deque sort
 //생성자
 func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecutor {
 	se := &SysExecutor{}
@@ -57,7 +59,6 @@ func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecuto
 	heap.Init(&se.input_event_queue)
 	se.min_schedule_item = min_schedule_heap{}
 	heap.Init(&se.min_schedule_item)
-
 	return se
 }
 
@@ -68,6 +69,7 @@ func (se SysExecutor) Get_global_time() float64 {
 func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 	se.waiting_obj_map[sim_obj.Get_create_time()] = append(se.waiting_obj_map[sim_obj.Get_create_time()], sim_obj)
 	// waiting_obj_map 에 create_time 별로 슬라이스를 만들어서 sim_obj 를 append 한다.
+	fmt.Println("\n Register_entity :", time.Since(Start_time))
 }
 
 func (se *SysExecutor) Create_entity() {
@@ -91,8 +93,11 @@ func (se *SysExecutor) Create_entity() {
 			}
 			delete(se.waiting_obj_map, key)
 
+			// sort.Sort(schedule_item(se.min_schedule_item))
+
 		}
 	}
+	fmt.Println("\n Create_entity :", time.Since(Start_time))
 }
 
 func (se *SysExecutor) Destory_entity() {
@@ -124,7 +129,7 @@ func (se *SysExecutor) Destory_entity() {
 			//mim_schedule_item에서도 지운다.
 		}
 	}
-
+	fmt.Println("\n Destory_entity :", time.Since(Start_time))
 }
 
 func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_port string, dst_obj *BehaviorModelExecutor, in_port string) {
@@ -177,7 +182,6 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 			e := o_event_queue{se.global_time, msg.Retrieve()}
 			se.output_event_queue = append([]*o_event_queue{&e}, se.output_event_queue...)
 		} else {
-			fmt.Println("single", v.object)
 			v.object.Ext_trans(v.port, msg) // msg.retrieve()
 			v.object.Set_req_time(se.global_time, 0)
 		}
@@ -220,35 +224,69 @@ func (se *SysExecutor) Init_sim() {
 func (se *SysExecutor) Schedule() {
 	se.Create_entity()
 	se.Handle_external_input_event()
-
-	tuple_obj := heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
-
-	fmt.Println("global time :", se.global_time, "obj:", tuple_obj, "req_time :", tuple_obj.Get_req_time())
 	const epsilon = 1e-14
-	for {
+	for i := 0; i < se.min_schedule_item.Len(); i++ {
+		fmt.Println("heap : ", se.min_schedule_item[i])
+	}
+	t := math.Abs(se.min_schedule_item[0].Get_req_time() - se.global_time)
 
-		t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
-		if t > epsilon {
-			break
+	if t < epsilon {
+		tuple_obj := heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
+		for {
+			msg := tuple_obj.Output()
+
+			if msg != nil {
+				se.output_handling(tuple_obj, msg)
+			}
+			tuple_obj.Int_trans()
+			req_t := tuple_obj.Get_req_time()
+			tuple_obj.Set_req_time(req_t, 0)
+
+			heap.Push(&se.min_schedule_item, tuple_obj)
+			sort.Sort(min_schedule_heap(se.min_schedule_item))
+			t := math.Abs(se.min_schedule_item[0].Get_req_time() - se.global_time)
+			if t > epsilon {
+				break
+			}
+			tuple_obj = heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
 		}
-
-		msg := tuple_obj.Output()
-
-		if msg != nil {
-			se.output_handling(tuple_obj, msg)
-		}
-		tuple_obj.Int_trans()
-		req_t := tuple_obj.Get_req_time()
-		tuple_obj.Set_req_time(req_t, 0)
-		heap.Push(&se.min_schedule_item, tuple_obj)
-
-		tuple_obj = heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
-
-		fmt.Println("obj : ", tuple_obj)
-		fmt.Println("req_time :", tuple_obj.Get_req_time())
 	}
 
-	heap.Push(&se.min_schedule_item, tuple_obj)
+	// tuple_obj := heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
+
+	// fmt.Println("global time :", se.global_time, "obj:", tuple_obj, "req_time :", tuple_obj.Get_req_time())
+
+	// for {
+	// 	t := math.Abs(tuple_obj.Get_req_time() - se.global_time)
+	// 	if t > epsilon {
+	// 		fmt.Println(tuple_obj)
+	// 		fmt.Println("for문 탈출")
+	// 		break
+	// 	}
+
+	// 	msg := tuple_obj.Output()
+
+	// 	if msg != nil {
+	// 		se.output_handling(tuple_obj, msg)
+	// 	}
+	// 	tuple_obj.Int_trans()
+	// 	req_t := tuple_obj.Get_req_time()
+	// 	tuple_obj.Set_req_time(req_t, 0)
+
+	// 	heap.Push(&se.min_schedule_item, tuple_obj)
+
+	// 	tuple_obj = heap.Pop(&se.min_schedule_item).(*BehaviorModelExecutor)
+	// 	fmt.Println("이게 맨앞으로 들어가야함 : ", tuple_obj)
+	// 	fmt.Println("obj : ", tuple_obj)
+	// 	fmt.Println("req_time :", tuple_obj.Get_req_time())
+	// }
+
+	// se.min_schedule_item.Push(tuple_obj)
+	// sort.Sort(min_schedule_heap(se.min_schedule_item))
+	// for i := 0; i < se.min_schedule_item.Len(); i++ {
+	// 	fmt.Println(" 과연 그럴까요? : ", se.min_schedule_item[i])
+	// }
+
 	se.global_time += se.time_step
 	se.Destory_entity()
 	fmt.Println("\n Schedule :", time.Since(Start_time))
@@ -279,10 +317,10 @@ func (se *SysExecutor) Simulation_stop() {
 	se.active_obj_map = make(map[float64]*BehaviorModelExecutor)
 	se.port_map = make(map[Object][]Object)
 	// se.min_schedule_item = *deque.New()
+	se.sim_init_time = time.Now()
 	for i := 0; i < se.min_schedule_item.Len(); i++ {
 		heap.Remove(&se.min_schedule_item, i)
 	}
-	se.sim_init_time = time.Now()
 	se.dmc = NewDMC(0, definition.Infinite, "dc", "default")
 	se.Register_entity(se.dmc.executor)
 }
@@ -324,6 +362,7 @@ func (se *SysExecutor) Get_generated_event() []*o_event_queue {
 }
 
 func (se *SysExecutor) Handle_external_input_event() {
+
 	var event_list []i_event_queue
 	for _, ev := range se.input_event_queue {
 		if ev.time <= se.global_time {
@@ -336,6 +375,8 @@ func (se *SysExecutor) Handle_external_input_event() {
 		heap.Pop(&se.input_event_queue)
 
 	}
+
+	sort.Sort(min_schedule_heap(se.min_schedule_item))
 	fmt.Println("\n Handle_external_input_event :", time.Since(Start_time))
 }
 
