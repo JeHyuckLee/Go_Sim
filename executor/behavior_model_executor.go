@@ -19,7 +19,7 @@ type BehaviorModelExecutor struct {
 	Behaviormodel *model.Behaviormodel
 	AbstractModel
 
-	_cancel_reshedule_f bool //리스케쥴링펑션의 실행 여부
+	_cancel_reshedule_f bool
 	engine_name         string
 	Cur_state           string
 	Instance_t          float64
@@ -49,7 +49,7 @@ func (b *BehaviorModelExecutor) Get_create_time() float64 {
 }
 
 func (b *BehaviorModelExecutor) Get_destruct_time() float64 {
-	return b.Instance_t
+	return b.Destruct_t
 }
 
 func (b *BehaviorModelExecutor) Init_state(state string) {
