@@ -1,0 +1,15 @@
+github.com/gammazero/deque v0.1.1 h1:xRVkDuSvDmFuMGf3IquHuRc2jlL0+v/WpFCWaauzwbE=
+github.com/gammazero/deque v0.1.1/go.mod h1:KQw7vFau1hHuM8xmI9RbgKFbAsQFWmBpqQ2KenFLk6M=
+github.com/jfcg/opt v0.2.4/go.mod h1:KVF8GWz/SDWSHnYY80Tghcs4zPcquIvirV40naQhFVU=
+github.com/jfcg/sixb v1.1.1 h1:HCArHFAP0vNZ+GJOteedQstV4dn4PxcGEMF/upkxuRs=
+github.com/jfcg/sixb v1.1.1/go.mod h1:3afTV2ig2p+URYUtxV4oTfEVv5/FJiIqxmrh9mGNc3A=
+github.com/jfcg/sixb v1.3.5 h1:K9b9cjTlPBH47+1xiyUftR2Edk7/qkoQv5m+MfJXbko=
+github.com/jfcg/sixb v1.3.5/go.mod h1:UWrAr1q9s7pSPPqZNccmQM4N75p8GvuBYdFuq+09Qns=
+github.com/jfcg/sorty v1.2.0 h1:VoHT3zGVWHzIbts99J56/l6bCiBdTr7keJt8KRRXlgA=
+github.com/jfcg/sorty v1.2.0/go.mod h1:t6obRZXIgehk2sjM7TfS/uoWtG9ZU+rlF9HZkWKraPY=
+github.com/jfcg/sorty/v2 v2.0.8 h1:x8vUzFP7KADIrEsGdrn3vHynpr72zmOVwUezoZnMG4w=
+github.com/jfcg/sorty/v2 v2.0.8/go.mod h1:KIEfHyaX4UWOg0mTYJEtpfVaXssBgjH7UXcWcJeLcJ8=
+gopkg.in/getlantern/deepcopy.v1 v1.0.0-20140913144530-b923171e8640 h1:fAfAHq363jp6NTMDHNe4EhfiIBPRR0JFJuBefZyVLaM=
+gopkg.in/getlantern/deepcopy.v1 v1.0.0-20140913144530-b923171e8640/go.mod h1:FeLAK3+BLfs7XMpGW8/75D+a2nq5bemZgvOR5BkhcYA=
+winterdrache.de/golib v0.0.0-20180611202533-782cc2630c6f h1:2EwLocAjr996KiP/EkFhd1Au0ejDZFCVf1KLJe6s+3E=
+winterdrache.de/golib v0.0.0-20180611202533-782cc2630c6f/go.mod h1:EEaUF0svVcYFqVVZuUzu7m/+2AdtRtqlXqyzqlkbaw4=
