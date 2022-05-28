@@ -5,7 +5,6 @@ import (
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
-	"runtime"
 	"time"
 )
 
@@ -54,7 +53,7 @@ func NewGenerator() *Generator {
 	gen.executor.Behaviormodel.Insert_state("MOVE", 1)
 	gen.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	gen.executor.Behaviormodel.CoreModel.Insert_output_port("process")
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		gen.msg_list = append(gen.msg_list, i)
 	}
 	return &gen
@@ -111,12 +110,11 @@ func NewProcessor() *Processor {
 func main() {
 	fmt.Println("start", time.Now())
 	executor.Start_time = time.Now()
-	runtime.GOMAXPROCS(8)
 	se := executor.NewSysSimulator()
 	se.Register_engine("sname", "VIRTURE_TIME", 1)
 	sim := se.Get_engine("sname")
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		gen := NewGenerator()
 		pro := NewProcessor()
 		sim.Register_entity(gen.executor)

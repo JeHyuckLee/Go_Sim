@@ -33,3 +33,7 @@ func Map_Find(m map[interface{}]interface{}, val interface{}) (interface{}, bool
 	}
 	return -1, false
 }
+
+func remove(slice []*BehaviorModelExecutor, s int) []*BehaviorModelExecutor {
+	return append(slice[:s], slice[s+1:]...)
+}
