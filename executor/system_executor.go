@@ -263,9 +263,10 @@ func (se *SysExecutor) Simulate(_time float64) { //default = infinity
 	se.target_time = se.global_time + _time
 	se.Init_sim()
 	for se.global_time < se.target_time {
-		if se.waiting_obj_map == nil {
+		if len(se.waiting_obj_map) == 0 {
 			if se.min_schedule_item[0].Get_req_time() == definition.Infinite && se.sim_mode == "VIRTURE_TIME" {
 				se.simulation_mode = definition.SIMULATION_TERMINATED
+				fmt.Println("Running_Time :", time.Since(Start_time))
 				break
 			}
 		}
@@ -300,7 +301,6 @@ func (se *SysExecutor) Insert_external_event(_port string, _msg interface{}, sch
 	} else {
 		print("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
 	}
-	fmt.Println("\n Insert_external_event :", time.Since(Start_time))
 
 }
 

@@ -2,31 +2,6 @@ package executor
 
 import "evsim_golang/system"
 
-type min_schedule_heap []*BehaviorModelExecutor
-
-func (m min_schedule_heap) Len() int {
-	return len(m)
-}
-func (m min_schedule_heap) Swap(i, j int) {
-	m[i], m[j] = m[j], m[i]
-}
-func (m min_schedule_heap) Less(i, j int) bool {
-	return m[i].Get_req_time() < m[j].Get_req_time()
-}
-
-func (m *min_schedule_heap) Push(elem interface{}) {
-
-	*m = append(*m, elem.(*BehaviorModelExecutor))
-}
-
-func (m *min_schedule_heap) Pop() interface{} {
-	old := *m
-	n := len(old)
-	elem := old[n-1]
-	*m = old[0 : n-1]
-	return elem
-}
-
 type Object struct {
 	object *BehaviorModelExecutor
 	port   string
