@@ -24,7 +24,7 @@ func (m *cellout) Output() *system.SysMessage {
 	//player 에게 전송
 }
 
-func AC_cellout() *cellout {
+func AM_cellout() *cellout {
 	m := cellout{}
 	m.executor = executor.NewExecutor(0, definition.Infinite, "out", "gosim")
 	m.executor.AbstractModel = &m
@@ -58,7 +58,7 @@ func (m *cellin) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
 }
 
-func AC_cellin() *cellin {
+func AM_cellin() *cellin {
 	m := cellin{}
 	m.executor = executor.NewExecutor(0, definition.Infinite, "in", "gosim")
 	m.executor.AbstractModel = &m
@@ -103,7 +103,7 @@ func (m *check) Output() *system.SysMessage {
 	//NEWS포트 로 입력이 들어오면 입력된 정보를 OuT 에게 전송
 }
 
-func AC_check() *check {
+func AM_check() *check {
 	//맵 모델
 	m := check{}
 	m.executor = executor.NewExecutor(0, definition.Infinite, "maze", "gosim")

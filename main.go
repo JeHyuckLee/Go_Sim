@@ -17,12 +17,12 @@ func main() {
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")
 
 	//player 결합모델
-	ac_move := AC_move()
-	ac_think := AC_think()
-	sim.Register_entity(ac_move.executor)
-	sim.Register_entity(ac_think.executor)
-	sim.Coupling_relation(nil, "start", ac_move.executor, "start")
-	sim.Coupling_relation(ac_think.executor, "move", ac_move.executor, "think")
+	am_move := AM_move()
+	am_think := AM_think()
+	sim.Register_entity(am_move.executor)
+	sim.Register_entity(am_think.executor)
+	sim.Coupling_relation(nil, "start", am_move.executor, "start")
+	sim.Coupling_relation(am_think.executor, "move", am_move.executor, "think")
 
 	//맵크기
 	width := 100
@@ -35,25 +35,25 @@ func main() {
 
 		for j := 0; j < width; j++ {
 			//cell의 원자모델 들 생성
-			ac_check := AC_check()
-			ac_in := AC_cellin()
-			ac_out := AC_cellout()
+			am_check := AM_check()
+			am_in := AM_cellin()
+			am_out := AM_cellout()
 			n := fmt.Sprintf("{%n,%n}", j, i)
-			ac_check.executor.Behaviormodel.CoreModel.Set_name(n)
-			ac_out.executor.Behaviormodel.CoreModel.Set_name(n)
-			ac_in.executor.Behaviormodel.CoreModel.Set_name(n)
+			am_check.executor.Behaviormodel.CoreModel.Set_name(n)
+			am_out.executor.Behaviormodel.CoreModel.Set_name(n)
+			am_in.executor.Behaviormodel.CoreModel.Set_name(n)
 
 			//결합모델 cell 만들기
-			sim.Register_entity(ac_check.executor)
-			sim.Register_entity(ac_out.executor)
-			sim.Register_entity(ac_in.executor)
-			sim.Coupling_relation(ac_in.executor, "check", ac_check.executor, "in")
-			sim.Coupling_relation(ac_check.executor, "out", ac_out.executor, "check")
+			sim.Register_entity(am_check.executor)
+			sim.Register_entity(am_out.executor)
+			sim.Register_entity(am_in.executor)
+			sim.Coupling_relation(am_in.executor, "check", am_check.executor, "in")
+			sim.Coupling_relation(am_check.executor, "out", am_out.executor, "check")
 
 			//player 와 cell 의 연결
-			sim.Coupling_relation(ac_move.executor, "cell", ac_in.executor, "cell")
-			sim.Coupling_relation(ac_out.executor, "player", ac_think.executor, "think")
-			cell[i][j] = ac_check.executor
+			sim.Coupling_relation(am_move.executor, "cell", am_in.executor, "cell")
+			sim.Coupling_relation(am_out.executor, "player", am_think.executor, "think")
+			cell[i][j] = am_check.executor
 		}
 
 	}
