@@ -259,14 +259,14 @@ func (se *SysExecutor) Schedule() {
 }
 
 func (se *SysExecutor) Simulate(_time float64) { //default = infinity
-
+	st := time.Now()
 	se.target_time = se.global_time + _time
 	se.Init_sim()
 	for se.global_time < se.target_time {
 		if len(se.waiting_obj_map) == 0 {
 			if se.min_schedule_item[0].Get_req_time() == definition.Infinite && se.sim_mode == "VIRTURE_TIME" {
 				se.simulation_mode = definition.SIMULATION_TERMINATED
-				fmt.Println("Running_Time :", time.Since(Start_time))
+				fmt.Println("engine_Running_Time :", time.Since(st))
 				break
 			}
 		}
