@@ -48,6 +48,7 @@ func main() {
 			sim.Register_entity(am_out.executor)
 			sim.Register_entity(am_in.executor)
 			sim.Coupling_relation(am_in.executor, "check", am_check.executor, "in")
+			// sim.Coupling_relation(am_check.executor, "out", am_out.executor, "check")
 
 			//player 와 cell 의 연결
 			sim.Coupling_relation(am_move.executor, n, am_in.executor, n)
@@ -64,17 +65,21 @@ func main() {
 		for j := 0; j < width; j++ {
 
 			if i != 0 {
-				sim.Coupling_relation(cell[i][j][0], "south", cell[i-1][j][1], "check")
+				sim.Coupling_relation(cell[i][j][0], "south", cell[i-1][j][0], "north")
+				sim.Coupling_relation(cell[i-1][j][0], "north", cell[i][j][1], "check")
 			}
 			if i != heigth-1 {
-				sim.Coupling_relation(cell[i][j][0], "north", cell[i+1][j][1], "check")
+				sim.Coupling_relation(cell[i][j][0], "north", cell[i+1][j][0], "south")
+				sim.Coupling_relation(cell[i+1][j][0], "south", cell[i][j][1], "check")
 			}
 
 			if j != 0 {
-				sim.Coupling_relation(cell[i][j][0], "west", cell[i][j-1][1], "check")
+				sim.Coupling_relation(cell[i][j][0], "west", cell[i][j-1][0], "east")
+				sim.Coupling_relation(cell[i][j-1][0], "east", cell[i][j][1], "check")
 			}
 			if j != width-1 {
-				sim.Coupling_relation(cell[i][j][0], "east", cell[i][j+1][1], "check")
+				sim.Coupling_relation(cell[i][j][0], "east", cell[i][j+1][0], "west")
+				sim.Coupling_relation(cell[i][j+1][0], "west", cell[i][j][1], "check")
 			}
 		}
 	}

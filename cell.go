@@ -125,6 +125,10 @@ func AM_check() *check {
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("west")
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("in")
 	//output port
+	m.executor.Behaviormodel.CoreModel.Insert_output_port("north")
+	m.executor.Behaviormodel.CoreModel.Insert_output_port("south")
+	m.executor.Behaviormodel.CoreModel.Insert_output_port("east")
+	m.executor.Behaviormodel.CoreModel.Insert_output_port("west")
 	m.executor.Behaviormodel.CoreModel.Insert_output_port("out")
 
 	return &m
