@@ -17,8 +17,8 @@ func main() {
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")
 
 	//player 결합모델
-	am_move := AM_move()
-	am_think := AM_think()
+	am_move := AM_move(0, definition.Infinite, "move", "gosim")
+	am_think := AM_think(0, definition.Infinite, "think", "gosim")
 	sim.Register_entity(am_move.executor)
 	sim.Register_entity(am_think.executor)
 	sim.Coupling_relation(nil, "start", am_move.executor, "start")
@@ -35,9 +35,9 @@ func main() {
 
 		for j := 0; j < width; j++ {
 			//cell의 원자모델 들 생성
-			am_check := AM_check()
-			am_in := AM_cellin()
-			am_out := AM_cellout()
+			am_check := AM_check(0, definition.Infinite, "check", "gosim", j, i)
+			am_in := AM_cellIn(0, definition.Infinite, "in", "gosim")
+			am_out := AM_cellOut(0, definition.Infinite, "out", "gosim")
 			n := fmt.Sprintf("{%n,%n}", j, i)
 			am_check.executor.Behaviormodel.CoreModel.Set_name(n)
 			am_out.executor.Behaviormodel.CoreModel.Set_name(n)
