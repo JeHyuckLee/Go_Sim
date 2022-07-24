@@ -28,11 +28,13 @@ func (m *cellout) Ext_trans(port string, msg *system.SysMessage) {
 
 func (m *cellout) Output() *system.SysMessage {
 	//player 에게 전송
+
+	return nil
 }
 
-func AM_cellout() *cellout {
+func AM_cellout(instance_time, destruct_time float64, name, engine_name string) *cellout {
 	m := cellout{}
-	m.executor = executor.NewExecutor(0, definition.Infinite, "out", "gosim")
+	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
 	//state
@@ -67,11 +69,12 @@ func (m *cellin) Ext_trans(port string, msg *system.SysMessage) {
 
 func (m *cellin) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
+	return nil
 }
 
-func AM_cellin() *cellin {
+func AM_cellin(instance_time, destruct_time float64, name, engine_name string) *cellin {
 	m := cellin{}
-	m.executor = executor.NewExecutor(0, definition.Infinite, "in", "gosim")
+	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
 	//state
@@ -100,9 +103,8 @@ func (m *check) set_position(x int, y int) {
 	m.y = y
 }
 
-func (m *check) get_position() int {
-	return m.x
-	return m.y
+func (m *check) get_position() (int, int) {
+	return m.x, m.y
 }
 
 func (m *check) set_block(b bool) {
@@ -145,10 +147,10 @@ func (m *check) Output() *system.SysMessage {
 	return msg
 }
 
-func AM_check(px int, py int) *check {
+func AM_check(instance_time, destruct_time float64, name, engine_name string, px int, py int) *check {
 	//맵 모델
 	m := check{}
-	m.executor = executor.NewExecutor(0, definition.Infinite, "maze", "gosim")
+	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 	m.block = false
 	m.x = px

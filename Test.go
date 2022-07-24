@@ -1,4 +1,4 @@
-// package main
+package main
 
 // import (
 // 	"evsim_golang/definition"
