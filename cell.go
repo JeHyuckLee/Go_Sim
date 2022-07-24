@@ -136,7 +136,9 @@ func (m *check) get_block() bool {
 
 func (m *check) Int_trans() {
 	//상태천이
-	if m.executor.Cur_state == "CHECK" && m.count == 4 {
+	if m.executor.Cur_state == "CHECK" && m.count == 5 {
+		m.executor.Cur_state = "IDLE"
+	} else if m.executor.Cur_state == "SET" {
 		m.executor.Cur_state = "IDLE"
 	} else if m.executor.Cur_state == "OUT" {
 		m.executor.Cur_state = "IDLE"
@@ -147,18 +149,18 @@ func (m *check) Int_trans() {
 
 func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 	//in에게 입력을 받으면 check 상태로 가고 연결된 애들에게 입력을 보냄
-	//NEWS 포트로 입력을 받으면 out 상태로 가고 OUT에게 입력을 보냄
+	//NEWS 포트로 입력을 받으면 SET 상태로 가고 각 셀 정보 저장
+	//전부 탐색시 OUT 상태로 가고 out에 정보 전달
 	if port == "in" {
 		m.executor.Cur_state = "CHECK"
-
-	} else {
+	} else if m.count == 4 {
 		m.executor.Cur_state = "OUT"
+		m.count++
+	} else {
+		m.executor.Cur_state = "SET"
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		m.block_list = append(m.block_list, data...)
-		if port == "north" {
-
-		}
 	}
 }
 
@@ -166,27 +168,36 @@ func (m *check) Output() *system.SysMessage {
 	//in에게 입력을 받으면 NEWS 포트중 연결된 포트로 출력
 	//NEWS포트 로 입력이 들어오면 입력된 정보를 OUT 에게 전송
 	if m.executor.Cur_state == "CHECK" {
-		if m.count == 0 {
+		if m.Nflag == false {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "north")
+			m.Nflag = true
 			m.count++
 			return msg
-		} else if m.count == 1 {
+		} else if m.Sflag == false {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "south")
+			m.Sflag = true
 			m.count++
 			return msg
-		} else if m.count == 2 {
+		} else if m.Eflag == false {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "east")
+			m.Eflag = true
 			m.count++
 			return msg
-		} else if m.count == 3 {
+		} else if m.Wflag == false {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "west")
+			m.Wflag = true
 			m.count++
 			return msg
 		}
+		return nil
+	} else if m.executor.Cur_state == "SET" {
+		return nil
 	}
 
-	// state = OUT
+	// Cur_state = OUT
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "out")
+	msg.Insert(m.block_list)
+	m.block_list = nil
 
 	return msg
 }
@@ -199,14 +210,20 @@ func AM_check(instance_time, destruct_time float64, name, engine_name string, px
 	m.block = false
 	m.x = px
 	m.y = py
+	m.Nflag = false
+	m.Sflag = false
+	m.Eflag = false
+	m.Wflag = false
 
 	//state
 
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
 	//OUT으로부터 입력이 오면 IDLE -> CHECK
 	m.executor.Behaviormodel.Insert_state("CHECK", 0)
-	//NEWS로부터 입력이 오면 IDLE->OUT
+	//Chcek한 셀 정보 넘기기
 	m.executor.Behaviormodel.Insert_state("OUT", 0)
+	//NEWS로부터 입력이 오면 check한 셀 정보 저장
+	m.executor.Behaviormodel.Insert_state("SET", 0)
 
 	//input port
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("north")
