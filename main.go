@@ -3,133 +3,88 @@ package main
 import (
 	"evsim_golang/definition"
 	"evsim_golang/executor"
-	"evsim_golang/system"
 	"fmt"
-	"runtime"
-	"time"
 )
 
-type Generator struct {
-	executor *executor.BehaviorModelExecutor
-	msg_list []interface{}
-}
-
-func (g *Generator) Ext_trans(port string, msg *system.SysMessage) {
-
-	//fmt.Println("ext_trans")
-	if port == "start" {
-		fmt.Println("[gen][in]:", time.Now())
-
-		g.executor.Cur_state = "MOVE"
-	}
-	// fmt.Println("\n gen_ext_trans :", time.Since(executor.Start_time))
-}
-
-func (g *Generator) Int_trans() {
-	//fmt.Println("int_trans")
-	if g.executor.Cur_state == "MOVE" && g.msg_list == nil {
-		g.executor.Cur_state = "IDLE"
-	} else {
-		g.executor.Cur_state = "MOVE"
-	}
-	// fmt.Println("\n get_int_trans :", time.Since(executor.Start_time))
-}
-
-func (g *Generator) Output() *system.SysMessage {
-	//fmt.Println("output")
-	msg := system.NewSysMessage(g.executor.Behaviormodel.CoreModel.Get_name(), "process")
-	fmt.Println("[gen][out]:", time.Now())
-	msg.Insert(g.msg_list[0])
-	g.msg_list = remove(g.msg_list, 0)
-	fmt.Println("\n gen_outPut :", time.Since(executor.Start_time))
-	return msg
-}
-
-func NewGenerator() *Generator {
-	gen := Generator{}
-	gen.executor = executor.NewExecutor(0, definition.Infinite, "Gen", "sname")
-	gen.executor.AbstractModel = &gen
-	gen.executor.Init_state("IDLE")
-	gen.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	gen.executor.Behaviormodel.Insert_state("MOVE", 1)
-	gen.executor.Behaviormodel.CoreModel.Insert_input_port("start")
-	gen.executor.Behaviormodel.CoreModel.Insert_output_port("process")
-	for i := 0; i < 100; i++ {
-		gen.msg_list = append(gen.msg_list, i)
-	}
-	return &gen
-}
-
-type Processor struct {
-	executor *executor.BehaviorModelExecutor
-	msg_list []interface{}
-}
-
-func (p *Processor) Ext_trans(port string, msg *system.SysMessage) {
-	//fmt.Println("ext_trans")
-	if port == "process" {
-		fmt.Println("[proc][in]", time.Now())
-		p.executor.Cancel_rescheduling()
-		data := msg.Retrieve()
-		p.msg_list = append(p.msg_list, data...)
-		p.executor.Cur_state = "PROCESS"
-	}
-	// fmt.Println("\n pro_exttrans :", time.Since(executor.Start_time))
-}
-
-func (p *Processor) Int_trans() {
-	//fmt.Println("int_trans")
-	if p.executor.Cur_state == "PROCESS" {
-		p.executor.Cur_state = "IDLE"
-	} else {
-		p.executor.Cur_state = "IDLE"
-	}
-	// fmt.Println("\n pro_int_trans :", time.Since(executor.Start_time))
-}
-
-func (p Processor) Output() *system.SysMessage {
-	//fmt.Println("output")
-	fmt.Println("[proc][out]", time.Now())
-	fmt.Println(p.msg_list...)
-
-	fmt.Println("\nproc_output :", time.Since(executor.Start_time))
-	return nil
-}
-
-func NewProcessor() *Processor {
-	pro := &Processor{}
-	pro.executor = executor.NewExecutor(0, definition.Infinite, "Proc", "sname")
-	pro.executor.AbstractModel = pro
-	pro.executor.Init_state("IDLE")
-	pro.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	pro.executor.Behaviormodel.Insert_state("PROCESS", 2)
-	pro.executor.Behaviormodel.CoreModel.Insert_input_port("PROCESS")
-
-	return pro
-}
+//player 는 처음 0.0 에게 입력을 보냄 입력을 받은 0.0은 연결된 0.1, 1.0 에게
+//입력을 보내고 블럭인지 아닌지에 대한 정보를 받아와서 플레이어 에게 알려줌
+//입력을 받은 player 는 어떻게 움직일지 판단한 후에 다음 블럭에게 입력을 보냄
 
 func main() {
-	fmt.Println("start", time.Now())
-	executor.Start_time = time.Now()
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	se := executor.NewSysSimulator()
-	se.Register_engine("sname", "REAL_TIME", 1)
-	sim := se.Get_engine("sname")
+	se.Register_engine("gosim", "VIRTURE_TIME", 1)
+	sim := se.Get_engine("gosim")
 	sim.Behaviormodel.CoreModel.Insert_input_port("start")
-	for i := 0; i < 100; i++ {
-		gen := NewGenerator()
-		pro := NewProcessor()
-		sim.Register_entity(gen.executor)
-		sim.Register_entity(pro.executor)
-		sim.Coupling_relation(nil, "start", gen.executor, "start")
-		sim.Coupling_relation(gen.executor, "process", pro.executor, "process")
+
+	//player 결합모델
+	am_move := AM_move()
+	am_think := AM_think()
+	sim.Register_entity(am_move.executor)
+	sim.Register_entity(am_think.executor)
+	sim.Coupling_relation(nil, "start", am_move.executor, "start")
+	sim.Coupling_relation(am_think.executor, "move", am_move.executor, "think")
+
+	//맵크기
+	width := 100
+	heigth := 100
+	// cell 끼리 연결 을 위해 만든 슬라이스
+	cell := make([][][]*executor.BehaviorModelExecutor, heigth)
+
+	for i := 0; i < heigth; i++ {
+		cell[i] = make([][]*executor.BehaviorModelExecutor, width)
+
+		for j := 0; j < width; j++ {
+			//cell의 원자모델 들 생성
+			am_check := AM_check()
+			am_in := AM_cellin()
+			am_out := AM_cellout()
+			n := fmt.Sprintf("{%n,%n}", j, i)
+			am_check.executor.Behaviormodel.CoreModel.Set_name(n)
+			am_out.executor.Behaviormodel.CoreModel.Set_name(n)
+			am_in.executor.Behaviormodel.CoreModel.Set_name(n)
+
+			//결합모델 cell 만들기
+			sim.Register_entity(am_check.executor)
+			sim.Register_entity(am_out.executor)
+			sim.Register_entity(am_in.executor)
+			sim.Coupling_relation(am_in.executor, "check", am_check.executor, "in")
+			// sim.Coupling_relation(am_check.executor, "out", am_out.executor, "check")
+
+			//player 와 cell 의 연결
+			sim.Coupling_relation(am_move.executor, n, am_in.executor, n)
+			sim.Coupling_relation(am_out.executor, "player", am_think.executor, "think")
+			cell[i][j] = make([]*executor.BehaviorModelExecutor, 2)
+			cell[i][j][0] = am_check.executor
+			cell[i][j][1] = am_out.executor
+		}
+
 	}
 
+	//cell과 cell의 연결
+	for i := 0; i < heigth; i++ {
+		for j := 0; j < width; j++ {
+
+			if i != 0 {
+				sim.Coupling_relation(cell[i][j][0], "south", cell[i-1][j][0], "north")
+				sim.Coupling_relation(cell[i-1][j][0], "north", cell[i][j][1], "check")
+			}
+			if i != heigth-1 {
+				sim.Coupling_relation(cell[i][j][0], "north", cell[i+1][j][0], "south")
+				sim.Coupling_relation(cell[i+1][j][0], "south", cell[i][j][1], "check")
+			}
+
+			if j != 0 {
+				sim.Coupling_relation(cell[i][j][0], "west", cell[i][j-1][0], "east")
+				sim.Coupling_relation(cell[i][j-1][0], "east", cell[i][j][1], "check")
+			}
+			if j != width-1 {
+				sim.Coupling_relation(cell[i][j][0], "east", cell[i][j+1][0], "west")
+				sim.Coupling_relation(cell[i][j+1][0], "west", cell[i][j][1], "check")
+			}
+		}
+	}
+
+	//시작
 	sim.Insert_external_event("start", nil, 0)
 	sim.Simulate(definition.Infinite)
-
-}
-
-func remove(slice []interface{}, s int) []interface{} {
-	return append(slice[:s], slice[s+1:]...)
 }

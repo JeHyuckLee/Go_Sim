@@ -17,3 +17,7 @@ func NewStructuralModel(name string) *StructuralModel {
 func (str *StructuralModel) Insert_model(model string) {
 	str._models = append(str._models, model)
 }
+
+func (str *StructuralModel) Retrieve_models() []string {
+	return str._models
+}
