@@ -111,6 +111,11 @@ type check struct {
 	block    bool
 	x        int
 	y        int
+	count    int
+	Nflag    bool
+	Sflag    bool
+	Eflag    bool
+	Wflag    bool
 }
 
 func (m *check) set_position(x int, y int) {
@@ -131,7 +136,7 @@ func (m *check) get_block() bool {
 
 func (m *check) Int_trans() {
 	//상태천이
-	if m.executor.Cur_state == "CHECK" && len(m.msg_list) == 0 {
+	if m.executor.Cur_state == "CHECK" && m.count == 4 {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "CHECK"
@@ -143,6 +148,7 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 	//NEWS 포트로 입력을 받으면 out 상태로 가고 OUT에게 입력을 보냄
 	if port == "in" {
 		m.executor.Cur_state = "CHECK"
+
 	} else {
 
 	}
@@ -152,9 +158,25 @@ func (m *check) Output() *system.SysMessage {
 	//in에게 입력을 받으면 NEWS 포트중 연결된 포트로 출력
 	//NEWS포트 로 입력이 들어오면 입력된 정보를 OuT 에게 전송
 	if m.executor.Cur_state == "CHECK" {
-
+		if m.count == 0 {
+			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "north")
+			m.count++
+			return msg
+		} else if m.count == 1 {
+			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "south")
+			m.count++
+			return msg
+		} else if m.count == 2 {
+			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "east")
+			m.count++
+			return msg
+		} else if m.count == 3 {
+			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "west")
+			m.count++
+			return msg
+		}
 	}
-	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
+
 	if m.executor.Cur_state == "OUT" {
 		if m.block == true {
 			fmt.Println("cell[%d][%d]", m.x, m.y)
@@ -162,8 +184,8 @@ func (m *check) Output() *system.SysMessage {
 			m.executor.Cur_state = "OUT"
 		}
 	}
-	msg.Insert(m.msg_list[0])
-	return msg
+
+	return nil
 }
 
 func AM_check(instance_time, destruct_time float64, name, engine_name string, px int, py int) *check {

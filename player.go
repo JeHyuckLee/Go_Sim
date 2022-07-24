@@ -26,11 +26,18 @@ type move struct {
 	portName string
 }
 
+func (m *move) set_position(x int, y int) {
+	m.x = x
+	m.y = y
+}
+
+func (m *move) get_position() (int, int) {
+	return m.x, m.y
+}
+
 //atomic model
 func AM_move(instance_time, destruct_time float64, name, engine_name string) *move {
 	m := move{}
-	m.x = 0
-	m.y = 0
 	m.portName = fmt.Sprintf("{%n,%n}", m.x, m.y)
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
@@ -60,10 +67,12 @@ func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 	//think로 부터 입력받아 해당하는 cell로 이동
 	if port == "start" {
 		m.executor.Cur_state = "MOVE"
+		m.set_position(0, 0)
 	}
 
 	if port == "think" {
 		m.executor.Cur_state = "THINK"
+		m.set_position(0, 0)
 	}
 }
 
