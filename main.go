@@ -1,7 +1,5 @@
 package main
 
-// bskim 브랜치
-
 import (
 	"evsim_golang/definition"
 	"evsim_golang/executor"
