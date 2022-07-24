@@ -138,6 +138,8 @@ func (m *check) Int_trans() {
 	//상태천이
 	if m.executor.Cur_state == "CHECK" && m.count == 4 {
 		m.executor.Cur_state = "IDLE"
+	} else if m.executor.Cur_state == "OUT" {
+		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "CHECK"
 	}
@@ -150,7 +152,7 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 		m.executor.Cur_state = "CHECK"
 
 	} else {
-
+		m.executor.Cur_state = "OUT"
 	}
 }
 
