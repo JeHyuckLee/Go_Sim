@@ -85,7 +85,6 @@ func (m *think) Ext_trans(port string, msg *system.SysMessage) {
 	//cell에게 입력을 받은 정보를 토대로 어디로 이동할지 생각
 	if port == "player" {
 		m.executor.Cur_state = "THINK"
-
 	}
 }
 
