@@ -49,9 +49,9 @@ func (m *move) Output() *system.SysMessage {
 }
 
 //atomic model
-func AM_move() *move {
+func AM_move(instance_time, destruct_time float64, name, engine_name string) *move {
 	m := move{}
-	m.executor = executor.NewExecutor(0, definition.Infinite, "move", "gosim")
+	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
 	//state
@@ -95,9 +95,9 @@ func (m *think) Output() *system.SysMessage {
 	return msg
 }
 
-func AM_think() *think {
+func AM_think(instance_time, destruct_time float64, name, engine_name string) *think {
 	m := think{}
-	m.executor = executor.NewExecutor(0, definition.Infinite, "think", "gosim")
+	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
 	//state
