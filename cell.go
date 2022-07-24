@@ -8,12 +8,12 @@ import (
 )
 
 //cell의 원자모델
-type cellout struct {
+type cellOut struct {
 	executor *executor.BehaviorModelExecutor
 	msg_list []interface{}
 }
 
-func (m *cellout) Int_trans() {
+func (m *cellOut) Int_trans() {
 	//상태변화
 	if m.executor.Cur_state == "OUT" && len(m.msg_list) == 0 {
 		m.executor.Cur_state = "IDLE"
@@ -22,18 +22,22 @@ func (m *cellout) Int_trans() {
 	}
 }
 
-func (m *cellout) Ext_trans(port string, msg *system.SysMessage) {
+func (m *cellOut) Ext_trans(port string, msg *system.SysMessage) {
 	//check 에게 정보를 받음
+	if port == "check" {
+
+	}
 }
 
-func (m *cellout) Output() *system.SysMessage {
+func (m *cellOut) Output() *system.SysMessage {
 	//player 에게 전송
+	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "player")
 
-	return nil
+	return msg
 }
 
-func AM_cellout(instance_time, destruct_time float64, name, engine_name string) *cellout {
-	m := cellout{}
+func AM_cellOut(instance_time, destruct_time float64, name, engine_name string) *cellOut {
+	m := cellOut{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
@@ -41,7 +45,6 @@ func AM_cellout(instance_time, destruct_time float64, name, engine_name string) 
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
 	m.executor.Behaviormodel.Insert_state("OUT", 0)
 	m.executor.Init_state("IDLE")
-
 	//port
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("check")
 	m.executor.Behaviormodel.CoreModel.Insert_output_port("player")
@@ -49,31 +52,43 @@ func AM_cellout(instance_time, destruct_time float64, name, engine_name string) 
 }
 
 //cell의 원자모델
-type cellin struct {
-	executor *executor.BehaviorModelExecutor
-	msg_list []interface{}
+type cellIn struct {
+	executor    *executor.BehaviorModelExecutor
+	player_list []interface{}
 }
 
-func (m *cellin) Int_trans() {
+func (m *cellIn) Int_trans() {
 	//상태변화
-	if m.executor.Cur_state == "IN" && len(m.msg_list) == 0 {
+	if m.executor.Cur_state == "IN" && len(m.player_list) == 0 {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "IN"
 	}
 }
 
-func (m *cellin) Ext_trans(port string, msg *system.SysMessage) {
+func (m *cellIn) Ext_trans(port string, msg *system.SysMessage) {
 	//player가 해당 셀에 왔음
+	if port == m.executor.Behaviormodel.CoreModel.Get_name() {
+		fmt.Println("Cell: ", m.executor.Behaviormodel.CoreModel.Get_name())
+		m.executor.Cancel_rescheduling()
+		data := msg.Retrieve()
+		m.player_list = append(m.player_list, data...)
+		m.executor.Cur_state = "IN"
+	}
+
 }
 
-func (m *cellin) Output() *system.SysMessage {
+func (m *cellIn) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
-	return nil
+	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "check")
+	msg.Insert(m.player_list[0])
+	m.player_list = remove(m.player_list, 0)
+
+	return msg
 }
 
-func AM_cellin(instance_time, destruct_time float64, name, engine_name string) *cellin {
-	m := cellin{}
+func AM_cellIn(instance_time, destruct_time float64, name, engine_name string) *cellIn {
+	m := cellIn{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
@@ -83,7 +98,7 @@ func AM_cellin(instance_time, destruct_time float64, name, engine_name string) *
 	m.executor.Init_state("IDLE")
 
 	//port
-	m.executor.Behaviormodel.CoreModel.Insert_input_port("cell")
+	m.executor.Behaviormodel.CoreModel.Insert_input_port(m.executor.Behaviormodel.CoreModel.Get_name())
 	m.executor.Behaviormodel.CoreModel.Insert_output_port("check")
 
 	return &m
@@ -128,6 +143,7 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 	//NEWS 포트로 입력을 받으면 out 상태로 가고 OUT에게 입력을 보냄
 	if port == "in" {
 		m.executor.Cur_state = "CHECK"
+	} else {
 
 	}
 }
@@ -135,8 +151,11 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 func (m *check) Output() *system.SysMessage {
 	//in에게 입력을 받으면 NEWS 포트중 연결된 포트로 출력
 	//NEWS포트 로 입력이 들어오면 입력된 정보를 OuT 에게 전송
+	if m.executor.Cur_state == "CHECK" {
+
+	}
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
-	if m.executor.Cur_state == "MOVE" {
+	if m.executor.Cur_state == "OUT" {
 		if m.block == true {
 			fmt.Println("cell[%d][%d]", m.x, m.y)
 		} else {
@@ -178,4 +197,8 @@ func AM_check(instance_time, destruct_time float64, name, engine_name string, px
 	m.executor.Behaviormodel.CoreModel.Insert_output_port("out")
 
 	return &m
+}
+
+func remove(slice []interface{}, s int) []interface{} {
+	return append(slice[:s], slice[s+1:]...)
 }
