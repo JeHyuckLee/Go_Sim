@@ -106,16 +106,16 @@ func AM_cellIn(instance_time, destruct_time float64, name, engine_name string) *
 
 //cell의 원자모델
 type check struct {
-	executor *executor.BehaviorModelExecutor
-	msg_list []interface{}
-	block    bool
-	x        int
-	y        int
-	count    int
-	Nflag    bool
-	Sflag    bool
-	Eflag    bool
-	Wflag    bool
+	executor   *executor.BehaviorModelExecutor
+	block_list []interface{}
+	block      bool
+	x          int
+	y          int
+	count      int
+	Nflag      bool
+	Sflag      bool
+	Eflag      bool
+	Wflag      bool
 }
 
 func (m *check) set_position(x int, y int) {
@@ -153,12 +153,18 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 
 	} else {
 		m.executor.Cur_state = "OUT"
+		m.executor.Cancel_rescheduling()
+		data := msg.Retrieve()
+		m.block_list = append(m.block_list, data...)
+		if port == "north" {
+
+		}
 	}
 }
 
 func (m *check) Output() *system.SysMessage {
 	//in에게 입력을 받으면 NEWS 포트중 연결된 포트로 출력
-	//NEWS포트 로 입력이 들어오면 입력된 정보를 OuT 에게 전송
+	//NEWS포트 로 입력이 들어오면 입력된 정보를 OUT 에게 전송
 	if m.executor.Cur_state == "CHECK" {
 		if m.count == 0 {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "north")
@@ -179,15 +185,10 @@ func (m *check) Output() *system.SysMessage {
 		}
 	}
 
-	if m.executor.Cur_state == "OUT" {
-		if m.block == true {
-			fmt.Println("cell[%d][%d]", m.x, m.y)
-		} else {
-			m.executor.Cur_state = "OUT"
-		}
-	}
+	// state = OUT
+	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "out")
 
-	return nil
+	return msg
 }
 
 func AM_check(instance_time, destruct_time float64, name, engine_name string, px int, py int) *check {
