@@ -34,13 +34,13 @@ func (m *move) Set_position(x int, y int) {
 func (m *move) Get_position() (int, int) {
 	return m.x, m.y
 }
-func (m *move) Insert_Output_Port(port_name string ){
+func (m *move) Insert_Player_Output_Port(port_name string ){
 	m.executor.Behaviormodel.CoreModel.Insert_output_port(port_name)
+}
 
 //atomic model
 func AM_move(instance_time, destruct_time float64, name, engine_name string) *move {
 	m := move{}
-	m.portName = fmt.Sprintf("{%n,%n}", m.x, m.y)
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
@@ -52,7 +52,7 @@ func AM_move(instance_time, destruct_time float64, name, engine_name string) *mo
 	//port
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("think")
-	m.executor.Behaviormodel.CoreModel.Insert_output_port(m.portName)
+
 
 	return &m
 }
