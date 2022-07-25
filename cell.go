@@ -123,14 +123,14 @@ func (m *check) set_position(x int, y int) {
 	m.y = y
 }
 
-func (m *check) get_position() (int, int) {
+func (m *check) Get_position() (int, int) {
 	return m.x, m.y
 }
 
-func (m *check) set_block(b bool) {
+func (m *check) Set_block(b bool) {
 	m.block = b
 }
-func (m *check) get_block() bool {
+func (m *check) Get_block() bool {
 	return m.block
 }
 
@@ -202,9 +202,11 @@ func (m *check) Output() *system.SysMessage {
 	return msg
 }
 
-func AM_check(instance_time, destruct_time float64, name, engine_name string) *check {
+func AM_check(instance_time, destruct_time float64, name, engine_name string,ix,iy) *check {
 	//맵 모델
 	m := check{}
+	m.x = ix
+	m.y = iy
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 	m.block = false
