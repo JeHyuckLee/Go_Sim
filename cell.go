@@ -15,7 +15,7 @@ type cellOut struct {
 
 func (m *cellOut) Int_trans() {
 	//상태변화
-	if m.executor.Cur_state == "OUT" && len(m.msg_list) == 0 {
+	if m.executor.Cur_state == "OUT" {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "OUT"
@@ -59,7 +59,7 @@ type cellIn struct {
 
 func (m *cellIn) Int_trans() {
 	//상태변화
-	if m.executor.Cur_state == "IN" && len(m.player_list) == 0 {
+	if m.executor.Cur_state == "IN" {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "IN"

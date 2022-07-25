@@ -56,7 +56,7 @@ func AM_move(instance_time, destruct_time float64, name, engine_name string) *mo
 }
 
 func (m *move) Int_trans() {
-	if m.executor.Cur_state == "MOVE" && len(m.msg_list) == 0 {
+	if m.executor.Cur_state == "MOVE" {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "MOVE"
@@ -112,7 +112,7 @@ func AM_think(instance_time, destruct_time float64, name, engine_name string) *t
 }
 
 func (m *think) Int_trans() {
-	if m.executor.Cur_state == "THINK" && len(m.msg_list) == 0 {
+	if m.executor.Cur_state == "THINK" {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "THINK"
