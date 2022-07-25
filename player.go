@@ -23,7 +23,6 @@ type move struct {
 	msg_list []interface{}
 	x        int
 	y        int
-	portName string
 }
 
 func (m *move) set_position(x int, y int) {
@@ -31,14 +30,16 @@ func (m *move) set_position(x int, y int) {
 	m.y = y
 }
 
-func (m *move) get_position() (int, int) {
+func (m *move) Get_position() (int, int) {
 	return m.x, m.y
+}
+func (m *move) Insert_Player_Output_Port(port_name string) {
+	m.executor.Behaviormodel.CoreModel.Insert_output_port(port_name)
 }
 
 //atomic model
 func AM_move(instance_time, destruct_time float64, name, engine_name string) *move {
 	m := move{}
-	m.portName = fmt.Sprintf("{%n,%n}", m.x, m.y)
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
@@ -50,7 +51,6 @@ func AM_move(instance_time, destruct_time float64, name, engine_name string) *mo
 	//port
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("think")
-	m.executor.Behaviormodel.CoreModel.Insert_output_port(m.portName)
 
 	return &m
 }
@@ -78,8 +78,8 @@ func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 
 func (m *move) Output() *system.SysMessage {
 	//그 해당하는 cell로 이동 해당 셀에 입력을 보냄
-
-	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), m.portName)
+	output_port := fmt.Sprintf("{%n,%n}", m.x, m.y)
+	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), output_port)
 	msg.Insert(m.msg_list[0])
 	return msg
 }

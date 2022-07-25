@@ -51,6 +51,8 @@ func main() {
 			// sim.Coupling_relation(am_check.executor, "out", am_out.executor, "check")
 
 			//player 와 cell 의 연결
+			am_move.Insert_Player_Output_Port(n)
+
 			sim.Coupling_relation(am_move.executor, n, am_in.executor, n)
 			sim.Coupling_relation(am_out.executor, "player", am_think.executor, "think")
 			cell[i][j] = make([]*executor.BehaviorModelExecutor, 2)
