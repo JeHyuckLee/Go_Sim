@@ -9,10 +9,10 @@ import (
 
 //cell의 원자모델
 type cellOut struct {
-	executor  *executor.BehaviorModelExecutor
-	msg_list  []interface{}
-	cell_list map[Dir]pos
+	executor *executor.BehaviorModelExecutor
+	msg_list []interface{}
 	cell_msg
+	cell_to_player_msg
 }
 
 func AM_cellOut(instance_time, destruct_time float64, name, engine_name string) *cellOut {
@@ -34,14 +34,17 @@ func (m *cellOut) Ext_trans(port string, msg *system.SysMessage) {
 	//check 에게 정보를 받음
 	if port == "check" {
 		m.executor.Cancel_rescheduling()
-		// data := msg.Retrieve()
-
+		data := msg.Retrieve()
+		m.cell_msg = data[0].(cell_msg)
 	}
 }
 
 func (m *cellOut) Output() *system.SysMessage {
 	//player 에게 전송
+	m.cell_to_player_msg.dir = m.cell_msg.dir
+	m.cell_to_player_msg.pos = m.cell_msg.pos
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "player")
+	msg.Insert(m.cell_to_player_msg)
 
 	return msg
 }
@@ -200,7 +203,9 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		msg := data[0].(cell_msg)
-		m.output = append(m.output, msg)
+		if msg.block == false {
+			m.output = append(m.output, msg)
+		}
 		m.count++
 		if m.count == m.con_count {
 			m.executor.Cur_state = "OUT"
