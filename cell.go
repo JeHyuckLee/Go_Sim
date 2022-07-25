@@ -202,14 +202,12 @@ func (m *check) Output() *system.SysMessage {
 	return msg
 }
 
-func AM_check(instance_time, destruct_time float64, name, engine_name string, px int, py int) *check {
+func AM_check(instance_time, destruct_time float64, name, engine_name string) *check {
 	//맵 모델
 	m := check{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 	m.block = false
-	m.x = px
-	m.y = py
 	m.Nflag = false
 	m.Sflag = false
 	m.Eflag = false
