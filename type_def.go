@@ -14,3 +14,9 @@ type pos struct {
 	x int
 	y int
 }
+
+type cell_msg struct {
+	dir   Dir
+	pos   pos
+	block bool
+}
