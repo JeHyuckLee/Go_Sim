@@ -35,7 +35,8 @@ func main() {
 
 		for j := 0; j < width; j++ {
 			//cell의 원자모델 들 생성
-			am_check := AM_check(0, definition.Infinite, "check", "gosim", j, i)
+			am_check.Set_position(j,i)
+			am_check := AM_check(0, definition.Infinite, "check", "gosim")
 			am_in := AM_cellIn(0, definition.Infinite, "in", "gosim")
 			am_out := AM_cellOut(0, definition.Infinite, "out", "gosim")
 			n := fmt.Sprintf("{%n,%n}", j, i)
