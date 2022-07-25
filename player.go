@@ -79,7 +79,7 @@ func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 
 func (m *move) Output() *system.SysMessage {
 	//그 해당하는 cell로 이동 해당 셀에 입력을 보냄
-	output_port := fmt.Sprintf("{%n,%n}", m.current_pos.x, m.current_pos.y)
+	output_port := fmt.Sprintf("{%d,%d}", m.current_pos.x, m.current_pos.y)
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), output_port)
 	msg.Insert(m.msg_list[0])
 	return msg
