@@ -14,3 +14,14 @@ type pos struct {
 	x int
 	y int
 }
+
+type cell_msg struct {
+	dir   Dir
+	pos   pos
+	block bool
+}
+
+type cell_to_player_msg struct {
+	dir Dir
+	pos pos
+}
