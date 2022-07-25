@@ -26,14 +26,16 @@ type move struct {
 	portName string
 }
 
-func (m *move) set_position(x int, y int) {
+func (m *move) Set_position(x int, y int) {
 	m.x = x
 	m.y = y
 }
 
-func (m *move) get_position() (int, int) {
+func (m *move) Get_position() (int, int) {
 	return m.x, m.y
 }
+func (m *move) Insert_Output_Port(port_name string ){
+	m.executor.Behaviormodel.CoreModel.Insert_output_port(port_name)
 
 //atomic model
 func AM_move(instance_time, destruct_time float64, name, engine_name string) *move {
