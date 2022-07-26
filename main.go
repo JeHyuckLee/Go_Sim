@@ -25,8 +25,8 @@ func main() {
 	sim.Coupling_relation(am_think.executor, "move", am_move.executor, "think")
 
 	//맵크기
-	width := 100
-	heigth := 100
+	width := 10
+	heigth := 10
 	// cell 끼리 연결 을 위해 만든 슬라이스
 	cell_Check := make([][]*check, heigth)
 	cell_Info := make([][]*cell_info, heigth)
@@ -74,23 +74,23 @@ func main() {
 
 			if i != 0 {
 				sim.Coupling_relation(cell_Check[i][j].executor, "south", cell_Info[i-1][j].executor, "north")
-				sim.Coupling_relation(cell_Info[i-1][j].executor, "north", cell_Check[i][j].executor, "check")
+				sim.Coupling_relation(cell_Info[i-1][j].executor, "north", cell_Check[i][j].executor, "south")
 				cell_Check[i][j].con_list[3] = true // n =0, e =1, w =2, s= 3
 			}
 			if i != heigth-1 {
 				sim.Coupling_relation(cell_Check[i][j].executor, "north", cell_Info[i+1][j].executor, "south")
-				sim.Coupling_relation(cell_Info[i+1][j].executor, "south", cell_Check[i][j].executor, "check")
+				sim.Coupling_relation(cell_Info[i+1][j].executor, "south", cell_Check[i][j].executor, "north")
 				cell_Check[i][j].con_list[0] = true
 			}
 
 			if j != 0 {
 				sim.Coupling_relation(cell_Check[i][j].executor, "west", cell_Info[i][j-1].executor, "east")
-				sim.Coupling_relation(cell_Info[i][j-1].executor, "east", cell_Check[i][j].executor, "check")
+				sim.Coupling_relation(cell_Info[i][j-1].executor, "east", cell_Check[i][j].executor, "west")
 				cell_Check[i][j].con_list[2] = true
 			}
 			if j != width-1 {
 				sim.Coupling_relation(cell_Check[i][j].executor, "east", cell_Info[i][j+1].executor, "west")
-				sim.Coupling_relation(cell_Info[i][j+1].executor, "west", cell_Check[i][j].executor, "check")
+				sim.Coupling_relation(cell_Info[i][j+1].executor, "west", cell_Check[i][j].executor, "east")
 				cell_Check[i][j].con_list[1] = true
 			}
 		}

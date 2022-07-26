@@ -10,6 +10,13 @@ const (
 	DIR_COUNT
 )
 
+type Ahead struct {
+	front string
+	back  string
+	left  string
+	right string
+}
+
 type pos struct {
 	x int
 	y int

@@ -7,12 +7,28 @@ import (
 	"fmt"
 )
 
+type cm_cell struct {
+	am_in    *cellIn
+	am_out   *cellOut
+	am_info  *cell_info
+	am_check *check
+}
+
+func create_cell(instance_time, destruct_time float64, name, engine_name string, ix, iy int) *cm_cell {
+	cell := cm_cell{}
+	cell.am_in = AM_cellIn(instance_time, destruct_time, name, engine_name)
+	cell.am_check = AM_check(instance_time, destruct_time, name, engine_name)
+	cell.am_info = AM_cellInfo(instance_time, destruct_time, name, engine_name, ix, iy)
+	cell.am_out = AM_cellOut(instance_time, destruct_time, name, engine_name)
+	return &cell
+
+}
+
 //cell의 원자모델
 type cellOut struct {
 	executor *executor.BehaviorModelExecutor
-	msg_list []interface{}
-	cell_msg
-	cell_to_player_msg
+	input    []cell_msg
+	output   []cell_to_player_msg
 }
 
 func AM_cellOut(instance_time, destruct_time float64, name, engine_name string) *cellOut {
@@ -35,16 +51,18 @@ func (m *cellOut) Ext_trans(port string, msg *system.SysMessage) {
 	if port == "check" {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
-		m.cell_msg = data[0].(cell_msg)
+		m.input = data[0].([]cell_msg)
 	}
 }
 
 func (m *cellOut) Output() *system.SysMessage {
 	//player 에게 전송
-	m.cell_to_player_msg.dir = m.cell_msg.dir
-	m.cell_to_player_msg.pos = m.cell_msg.pos
+	for i, v := range m.input {
+		m.output[i].dir = v.dir
+		m.output[i].pos = v.pos
+	}
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "player")
-	msg.Insert(m.cell_to_player_msg)
+	msg.Insert(m.output)
 
 	return msg
 }
@@ -100,7 +118,7 @@ func (m *cellIn) Ext_trans(port string, msg *system.SysMessage) {
 func (m *cellIn) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "check")
-	msg.Insert(m.player_list[0])
+	//msg.Insert(m.player_list[0])
 	// m.player_list = remove(m.player_list, 0)
 
 	return msg
@@ -117,21 +135,17 @@ func (m *cellIn) Int_trans() {
 
 //cell의 원자모델
 type check struct {
-	executor   *executor.BehaviorModelExecutor
-	block_list []interface{}
-	block      bool
-	con_count  int
-	count      int
-	checking   bool
-	Nflag      bool
-	Sflag      bool
-	Eflag      bool
-	Wflag      bool
-	out        bool
-	con_list   map[Dir]bool //n =0 e = 1 w = 2 s = 3
-	output     []cell_msg
-	out_dir    Dir
-	out_port   string
+	executor  *executor.BehaviorModelExecutor
+	block     bool
+	con_count int
+	count     int
+	checking  bool
+	Nflag     bool
+	Sflag     bool
+	Eflag     bool
+	Wflag     bool
+	con_list  map[Dir]bool //n =0 e = 1 w = 2 s = 3
+	output    []cell_msg
 }
 
 func AM_check(instance_time, destruct_time float64, name, engine_name string) *check {
@@ -174,8 +188,9 @@ func AM_check(instance_time, destruct_time float64, name, engine_name string) *c
 
 func (m *check) flag_initialize() {
 	//con_list 가 true 이면 연결되어있음
+	m.output = make([]cell_msg, 4)
 	for k, v := range m.con_list {
-		if v == true {
+		if v {
 			m.count++
 			m.con_count++
 		}
@@ -203,7 +218,7 @@ func (m *check) Ext_trans(port string, msg *system.SysMessage) {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		msg := data[0].(cell_msg)
-		if msg.block == false {
+		if !msg.block {
 			m.output = append(m.output, msg)
 		}
 		m.count++
@@ -219,22 +234,22 @@ func (m *check) Output() *system.SysMessage {
 	//NEWS포트 로 입력이 들어오면 입력된 정보를 상대방 셀 에게 전송
 	if m.executor.Cur_state == "CHECK" {
 		//true 이면 연결되어있음
-		if m.Nflag == true {
+		if m.Nflag {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "north")
 			m.Nflag = false
 			m.count--
 			return msg
-		} else if m.Sflag == true {
+		} else if m.Sflag {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "south")
 			m.Sflag = false
 			m.count--
 			return msg
-		} else if m.Eflag == true {
+		} else if m.Eflag {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "east")
 			m.Eflag = false
 			m.count--
 			return msg
-		} else if m.Wflag == true {
+		} else if m.Wflag {
 			msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "west")
 			m.Wflag = false
 			m.count--
@@ -315,25 +330,25 @@ func (m *cell_info) Ext_trans(port string, msg *system.SysMessage) {
 	if port == "north" {
 
 		m.executor.Cur_state = "out"
-		m.out_dir = 3     //입력이 들어온 셀을 기준으로 했을때 자신의 위치
-		m.out_port = port // 입력이 들어온 셀로 다시 보내줌
+		m.out_dir = Dir_South //입력이 들어온 셀을 기준으로 했을때 자신의 위치
+		m.out_port = port     // 입력이 들어온 셀로 다시 보내줌
 
 	} else if port == "east" {
 
 		m.executor.Cur_state = "out"
-		m.out_dir = 2
+		m.out_dir = Dir_West
 		m.out_port = port
 
 	} else if port == "west" {
 
 		m.executor.Cur_state = "out"
-		m.out_dir = 1
+		m.out_dir = Dir_East
 		m.out_port = port
 
 	} else if port == "south" {
 
 		m.executor.Cur_state = "out"
-		m.out_dir = 0
+		m.out_dir = Dir_Nort
 		m.out_port = port
 	}
 }

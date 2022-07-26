@@ -7,6 +7,19 @@ import (
 	"fmt"
 )
 
+type cm_player struct {
+	am_move  *move
+	am_think *think
+}
+
+func create_player(instance_time, destruct_time float64, name, engine_name string, ix, iy int) *cm_player {
+	player := cm_player{}
+	player.am_move = AM_move(instance_time, destruct_time, name, engine_name)
+	player.am_think = AM_think(instance_time, destruct_time, name, engine_name)
+
+	return &player
+}
+
 //player 의 원자모델 move
 type move struct {
 	executor    *executor.BehaviorModelExecutor
@@ -61,11 +74,11 @@ func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 	//think로 부터 입력받아 해당하는 cell로 이동
 	if port == "start" {
 		m.set_position(0, 0)
+		m.msg_list = append(m.msg_list, 0)
 		m.executor.Cur_state = "MOVE"
 	}
 
 	if port == "think" {
-
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		p := data[0].(pos)
@@ -89,14 +102,17 @@ func (m *move) Output() *system.SysMessage {
 type think struct {
 	executor *executor.BehaviorModelExecutor
 	msg_list []interface{}
+	ahead    Ahead
 	pos      pos
-	nx, ny   int
+	cell_msg
+	nx, ny int
 }
 
 func AM_think(instance_time, destruct_time float64, name, engine_name string) *think {
 	m := think{}
 	m.pos.x = 0
 	m.pos.y = 0
+	m.set_Ahead("south")
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
@@ -112,20 +128,13 @@ func AM_think(instance_time, destruct_time float64, name, engine_name string) *t
 	return &m
 }
 
-func (m *think) Int_trans() {
-	if m.executor.Cur_state == "THINK" {
-		//cell로 부터 갈수있는 위치와 방향을 받아서 어디로갈지 정하는 로직
-		//m.set_position(nx,ny)
-		m.executor.Cur_state = "IDLE"
-	} else {
-		m.executor.Cur_state = "THINK"
-	}
-}
-
 func (m *think) Ext_trans(port string, msg *system.SysMessage) {
 	//cell에게 입력을 받은 정보를 토대로 어디로 이동할지 생각
 	if port == "player" {
 		// cell 입력받은 정보를 저장
+		m.executor.Cancel_rescheduling()
+		data := msg.Retrieve()
+		m.cell_msg = data[0].(cell_msg)
 		m.executor.Cur_state = "THINK"
 	}
 }
@@ -136,6 +145,65 @@ func (m *think) Output() *system.SysMessage {
 	m.msg_list = append(m.msg_list, m.get_position())
 	msg.Insert(m.msg_list[0])
 	return msg
+}
+
+func (m *think) Int_trans() {
+	if m.executor.Cur_state == "THINK" {
+		m.executor.Cur_state = "IDLE"
+	} else {
+		m.executor.Cur_state = "THINK"
+	}
+}
+
+func (m *think) set_Ahead(ahead string) {
+	switch ahead {
+	case "north":
+		m.ahead.front = "north"
+		m.ahead.back = "south"
+		m.ahead.left = "east"
+		m.ahead.right = "west"
+	case "south":
+		m.ahead.front = "south"
+		m.ahead.back = "north"
+		m.ahead.left = "west"
+		m.ahead.right = "east"
+	case "east":
+		m.ahead.front = "east"
+		m.ahead.back = "west"
+		m.ahead.left = "south"
+		m.ahead.right = "north"
+	case "west":
+		m.ahead.front = "west"
+		m.ahead.back = "east"
+		m.ahead.left = "north"
+		m.ahead.right = "south"
+	}
+}
+
+func (m *think) turnLeft() {
+	switch m.ahead.front {
+	case "north":
+		m.set_Ahead("east")
+	case "south":
+		m.set_Ahead("west")
+	case "east":
+		m.set_Ahead("south")
+	case "west":
+		m.set_Ahead("north")
+	}
+}
+
+func (m *think) turnRight() {
+	switch m.ahead.front {
+	case "north":
+		m.set_Ahead("west")
+	case "south":
+		m.set_Ahead("east")
+	case "east":
+		m.set_Ahead("north")
+	case "west":
+		m.set_Ahead("south")
+	}
 }
 
 func (m *think) set_position(x int, y int) {
