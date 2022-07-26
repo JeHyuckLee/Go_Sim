@@ -7,12 +7,25 @@ import (
 	"fmt"
 )
 
+type cm_player struct {
+	am_move  *move
+	am_think *think
+}
+
 //player 의 원자모델 move
 type move struct {
 	executor    *executor.BehaviorModelExecutor
 	msg_list    []interface{}
 	current_pos pos
 	next_pos    pos
+}
+
+func create_player(instance_time, destruct_time float64, name, engine_name string) *cm_player {
+	player := cm_player{}
+	player.am_move = AM_move(instance_time, destruct_time, name, engine_name)
+	player.am_think = AM_think(instance_time, destruct_time, name, engine_name)
+
+	return &player
 }
 
 //atomic model
@@ -146,4 +159,3 @@ func (m *think) set_position(x int, y int) {
 func (m *think) get_position() pos {
 	return m.pos
 }
-
