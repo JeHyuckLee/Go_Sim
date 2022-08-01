@@ -23,9 +23,8 @@ func create_player(instance_time, destruct_time float64, name, engine_name strin
 //player 의 원자모델 move
 type move struct {
 	executor    *executor.BehaviorModelExecutor
-	msg_list    []interface{}
+	ahead       Ahead
 	current_pos pos
-	next_pos    pos
 }
 
 //atomic model
@@ -46,6 +45,19 @@ func AM_move(instance_time, destruct_time float64, name, engine_name string) *mo
 	return &m
 }
 
+func (m *move) move_player(dir Dir) {
+	switch dir {
+	case Dir(0):
+		m.set_position(m.current_pos.x, m.current_pos.y+1)
+	case Dir(1):
+		m.set_position(m.current_pos.x-1, m.current_pos.y)
+	case Dir(2):
+		m.set_position(m.current_pos.x+1, m.current_pos.y)
+	case Dir(3):
+		m.set_position(m.current_pos.x, m.current_pos.y-1)
+	}
+}
+
 func (m *move) set_position(x int, y int) {
 	m.current_pos.x = x
 	m.current_pos.y = y
@@ -59,33 +71,21 @@ func (m *move) insert_Player_Output_Port(port_name string) {
 	m.executor.Behaviormodel.CoreModel.Insert_output_port(port_name)
 }
 
-func (m *move) Int_trans() {
-	if m.executor.Cur_state == "MOVE" {
-		//이동
-		m.set_position(m.next_pos.x, m.next_pos.y)
-
-		m.executor.Cur_state = "IDLE"
-	} else {
-		m.executor.Cur_state = "MOVE"
-	}
-}
-
 func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 	//think로 부터 입력받아 해당하는 cell로 이동
 	if port == "start" {
 		m.set_position(0, 0)
-		m.msg_list = append(m.msg_list, 0)
+		fmt.Println("Hi Maze")
 		m.executor.Cur_state = "MOVE"
 	}
 
 	if port == "think" {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
-		p := data[0].(pos)
+		m.ahead = data[0].(Ahead)
 
-		//다음움직일곳
-		m.next_pos.x = p.x
-		m.next_pos.y = p.y
+		// 플레이어 이동
+		m.move_player(m.ahead.front)
 		m.executor.Cur_state = "MOVE"
 	}
 }
@@ -93,26 +93,35 @@ func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 func (m *move) Output() *system.SysMessage {
 	//그 해당하는 cell로 이동 해당 셀에 입력을 보냄
 	output_port := fmt.Sprintf("{%d,%d}", m.get_position().x, m.get_position().y)
+	fmt.Println(output_port)
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), output_port)
-	msg.Insert(m.msg_list[0])
+	msg.Insert(m.current_pos)
 	return msg
+}
+
+func (m *move) Int_trans() {
+	if m.executor.Cur_state == "MOVE" {
+		m.executor.Cur_state = "IDLE"
+	} else {
+		m.executor.Cur_state = "MOVE"
+	}
 }
 
 //player의 원자모델
 type think struct {
-	executor *executor.BehaviorModelExecutor
-	msg_list []interface{}
-	ahead    Ahead
-	pos      pos
-	cell_msg
-	nx, ny int
+	executor  *executor.BehaviorModelExecutor
+	msg_list  []interface{}
+	ahead     Ahead
+	pos       pos
+	input_msg []cell_msg
+	nx, ny    int
 }
 
 func AM_think(instance_time, destruct_time float64, name, engine_name string) *think {
 	m := think{}
 	m.pos.x = 0
 	m.pos.y = 0
-	m.set_Ahead("south")
+	m.set_Ahead(Dir(3))
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
 
@@ -134,17 +143,36 @@ func (m *think) Ext_trans(port string, msg *system.SysMessage) {
 		// cell 입력받은 정보를 저장
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
-		m.cell_msg = data[0].(cell_msg)
+		m.input_msg = data[0].([]cell_msg)
 		m.executor.Cur_state = "THINK"
 	}
 }
 
 func (m *think) Output() *system.SysMessage {
-	//이동할 위치를 전송
-	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
-	m.msg_list = append(m.msg_list, m.get_position())
-	msg.Insert(m.msg_list[0])
-	return msg
+	for i := 0; i < 4; i++ {
+		if m.ahead.right == m.input_msg[i].dir {
+			if m.input_msg[i].block == false {
+				m.turnRight()
+				msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
+				output_msg := m.ahead
+				msg.Insert(output_msg)
+				return msg
+			}
+		}
+		if m.ahead.front == m.input_msg[i].dir {
+			if m.input_msg[i].block == false {
+				msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
+				output_msg := m.ahead
+				msg.Insert(output_msg)
+				return msg
+			} else if m.input_msg[i].block == true {
+				m.turnLeft()
+				i = 0
+			}
+		}
+	}
+
+	return nil
 }
 
 func (m *think) Int_trans() {
@@ -155,54 +183,54 @@ func (m *think) Int_trans() {
 	}
 }
 
-func (m *think) set_Ahead(ahead string) {
+func (m *think) set_Ahead(ahead Dir) {
 	switch ahead {
-	case "north":
-		m.ahead.front = "north"
-		m.ahead.back = "south"
-		m.ahead.left = "east"
-		m.ahead.right = "west"
-	case "south":
-		m.ahead.front = "south"
-		m.ahead.back = "north"
-		m.ahead.left = "west"
-		m.ahead.right = "east"
-	case "east":
-		m.ahead.front = "east"
-		m.ahead.back = "west"
-		m.ahead.left = "south"
-		m.ahead.right = "north"
-	case "west":
-		m.ahead.front = "west"
-		m.ahead.back = "east"
-		m.ahead.left = "north"
-		m.ahead.right = "south"
+	case Dir(0):
+		m.ahead.front = Dir(0)
+		m.ahead.back = Dir(3)
+		m.ahead.left = Dir(1)
+		m.ahead.right = Dir(2)
+	case Dir(3):
+		m.ahead.front = Dir(3)
+		m.ahead.back = Dir(0)
+		m.ahead.left = Dir(2)
+		m.ahead.right = Dir(1)
+	case Dir(1):
+		m.ahead.front = Dir(1)
+		m.ahead.back = Dir(2)
+		m.ahead.left = Dir(3)
+		m.ahead.right = Dir(0)
+	case Dir(2):
+		m.ahead.front = Dir(2)
+		m.ahead.back = Dir(1)
+		m.ahead.left = Dir(0)
+		m.ahead.right = Dir(3)
 	}
 }
 
 func (m *think) turnLeft() {
 	switch m.ahead.front {
-	case "north":
-		m.set_Ahead("east")
-	case "south":
-		m.set_Ahead("west")
-	case "east":
-		m.set_Ahead("south")
-	case "west":
-		m.set_Ahead("north")
+	case Dir(0):
+		m.set_Ahead(Dir(1))
+	case Dir(3):
+		m.set_Ahead(Dir(2))
+	case Dir(1):
+		m.set_Ahead(Dir(3))
+	case Dir(2):
+		m.set_Ahead(Dir(0))
 	}
 }
 
 func (m *think) turnRight() {
 	switch m.ahead.front {
-	case "north":
-		m.set_Ahead("west")
-	case "south":
-		m.set_Ahead("east")
-	case "east":
-		m.set_Ahead("north")
-	case "west":
-		m.set_Ahead("south")
+	case Dir(0):
+		m.set_Ahead(Dir(2))
+	case Dir(3):
+		m.set_Ahead(Dir(1))
+	case Dir(1):
+		m.set_Ahead(Dir(0))
+	case Dir(2):
+		m.set_Ahead(Dir(3))
 	}
 }
 

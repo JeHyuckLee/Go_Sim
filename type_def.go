@@ -11,10 +11,10 @@ const (
 )
 
 type Ahead struct {
-	front string
-	back  string
-	left  string
-	right string
+	front Dir
+	back  Dir
+	left  Dir
+	right Dir
 }
 
 type pos struct {
