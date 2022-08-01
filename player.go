@@ -110,17 +110,18 @@ func (m *move) Int_trans() {
 //player의 원자모델
 type think struct {
 	executor  *executor.BehaviorModelExecutor
-	msg_list  []interface{}
 	ahead     Ahead
 	pos       pos
 	input_msg []cell_msg
 	nx, ny    int
+	flag      bool
 }
 
 func AM_think(instance_time, destruct_time float64, name, engine_name string) *think {
 	m := think{}
 	m.pos.x = 0
 	m.pos.y = 0
+	m.flag = false
 	m.set_Ahead(Dir(3))
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
@@ -157,17 +158,21 @@ func (m *think) Output() *system.SysMessage {
 				output_msg := m.ahead
 				msg.Insert(output_msg)
 				return msg
-			}
-		}
-		if m.ahead.front == m.input_msg[i].dir {
-			if m.input_msg[i].block == false {
-				msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
-				output_msg := m.ahead
-				msg.Insert(output_msg)
-				return msg
 			} else if m.input_msg[i].block == true {
-				m.turnLeft()
+				m.flag = true
 				i = 0
+			}
+		} else if m.flag == true {
+			if m.ahead.front == m.input_msg[i].dir {
+				if m.input_msg[i].block == false {
+					msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
+					output_msg := m.ahead
+					msg.Insert(output_msg)
+					return msg
+				} else if m.input_msg[i].block == true {
+					m.turnLeft()
+					i = 0
+				}
 			}
 		}
 	}
