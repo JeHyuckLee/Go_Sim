@@ -118,7 +118,6 @@ func (m *cell_check) Ext_trans(port string, msg *system.SysMessage) {
 
 func (m *cell_check) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
-
 	//시작지점을 1.1 로 하고 주변을 벽으로 해야할듯
 	m.cellmsg[0].pos.x = m.pos.x
 	m.cellmsg[1].pos.x = m.pos.x + 1
@@ -131,8 +130,8 @@ func (m *cell_check) Output() *system.SysMessage {
 	m.cellmsg[3].pos.y = m.pos.y - 1
 
 	// 1 = block
-	for _, v := range m.cellmsg {
-		v.block = m.cell[v.pos.y][v.pos.x]
+	for i := 0; i < 4; i++ {
+		m.cellmsg[i].block = m.cell[m.cellmsg[i].pos.y][m.cellmsg[i].pos.x]
 	}
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "player")
 	msg.Insert(m.cellmsg)
