@@ -14,7 +14,7 @@ type cm_player struct {
 
 func create_player(instance_time, destruct_time float64, name, engine_name string, ix, iy int) *cm_player {
 	player := cm_player{}
-	player.am_move = AM_move(instance_time, destruct_time, name, engine_name)
+	player.am_move = AM_move(instance_time, destruct_time, name, engine_name, ix, iy)
 	player.am_think = AM_think(instance_time, destruct_time, name, engine_name)
 
 	return &player
@@ -28,10 +28,12 @@ type move struct {
 }
 
 //atomic model
-func AM_move(instance_time, destruct_time float64, name, engine_name string) *move {
+func AM_move(instance_time, destruct_time float64, name, engine_name string, ix, iy int) *move {
 	m := move{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = &m
+	m.current_pos.x = ix
+	m.current_pos.y = iy
 
 	//state
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
@@ -41,6 +43,7 @@ func AM_move(instance_time, destruct_time float64, name, engine_name string) *mo
 	//port
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("start")
 	m.executor.Behaviormodel.CoreModel.Insert_input_port("think")
+	m.executor.Behaviormodel.CoreModel.Insert_output_port("in")
 
 	return &m
 }
@@ -67,19 +70,15 @@ func (m *move) get_position() pos {
 	return m.current_pos
 }
 
-func (m *move) insert_Player_Output_Port(port_name string) {
-	m.executor.Behaviormodel.CoreModel.Insert_output_port(port_name)
-}
-
 func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 	//think로 부터 입력받아 해당하는 cell로 이동
 	if port == "start" {
-		m.set_position(0, 0)
 		fmt.Println("Hi Maze")
 		m.executor.Cur_state = "MOVE"
 	}
 
 	if port == "think" {
+		fmt.Println("State: player think -> move")
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		m.ahead = data[0].(Ahead)
@@ -94,7 +93,7 @@ func (m *move) Output() *system.SysMessage {
 	//그 해당하는 cell로 이동 해당 셀에 입력을 보냄
 	output_port := fmt.Sprintf("{%d,%d}", m.get_position().x, m.get_position().y)
 	fmt.Println(output_port)
-	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), output_port)
+	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
 	msg.Insert(m.current_pos)
 	return msg
 }
@@ -142,6 +141,7 @@ func (m *think) Ext_trans(port string, msg *system.SysMessage) {
 	//cell에게 입력을 받은 정보를 토대로 어디로 이동할지 생각
 	if port == "player" {
 		// cell 입력받은 정보를 저장
+		fmt.Println("State: player think")
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		m.input_msg = data[0].([]cell_msg)
@@ -152,24 +152,25 @@ func (m *think) Ext_trans(port string, msg *system.SysMessage) {
 func (m *think) Output() *system.SysMessage {
 	for i := 0; i < 4; i++ {
 		if m.ahead.right == m.input_msg[i].dir {
-			if m.input_msg[i].block == false {
+			if m.input_msg[i].block == 0 {
 				m.turnRight()
 				msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
 				output_msg := m.ahead
 				msg.Insert(output_msg)
 				return msg
-			} else if m.input_msg[i].block == true {
+			} else if m.input_msg[i].block == 1 {
 				m.flag = true
 				i = 0
 			}
 		} else if m.flag == true {
 			if m.ahead.front == m.input_msg[i].dir {
-				if m.input_msg[i].block == false {
+				if m.input_msg[i].block == 0 {
 					msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
 					output_msg := m.ahead
 					msg.Insert(output_msg)
 					return msg
-				} else if m.input_msg[i].block == true {
+				} else if m.input_msg[i].block == 1 {
+					fmt.Println(m.input_msg[i].block)
 					m.turnLeft()
 					i = 0
 				}

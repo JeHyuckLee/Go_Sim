@@ -168,6 +168,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	}
 
 	dst := se.port_map[pair]
+
 	if dst == nil { //도착지가없다
 		err := func() error {
 			return errors.New("destination not found")
