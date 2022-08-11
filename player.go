@@ -51,13 +51,13 @@ func AM_move(instance_time, destruct_time float64, name, engine_name string, ix,
 func (m *move) move_player(dir Dir) {
 	switch dir {
 	case Dir(0):
-		m.set_position(m.current_pos.x, m.current_pos.y+1)
+		m.set_position(m.current_pos.x, m.current_pos.y-1)
 	case Dir(1):
 		m.set_position(m.current_pos.x+1, m.current_pos.y)
 	case Dir(2):
 		m.set_position(m.current_pos.x-1, m.current_pos.y)
 	case Dir(3):
-		m.set_position(m.current_pos.x, m.current_pos.y-1)
+		m.set_position(m.current_pos.x, m.current_pos.y+1)
 	}
 }
 
@@ -96,6 +96,7 @@ func (m *move) Ext_trans(port string, msg *system.SysMessage) {
 func (m *move) Output() *system.SysMessage {
 	//그 해당하는 cell로 이동 해당 셀에 입력을 보냄
 	output_port := fmt.Sprintf("{%d,%d}", m.get_position().x, m.get_position().y)
+
 	fmt.Println(output_port)
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
 	msg.Insert(m.current_pos)

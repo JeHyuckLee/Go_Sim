@@ -5,6 +5,7 @@ import (
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
+	"os"
 )
 
 type cm_cell struct {
@@ -77,6 +78,7 @@ func (m *cell_in) Int_trans() {
 type cell_check struct {
 	executor *executor.BehaviorModelExecutor
 	cell     [][]int
+	cell2    [][]int
 	pos      pos
 	cellmsg  []cell_msg
 }
@@ -88,6 +90,7 @@ func AM_cellcheck(instance_time, destruct_time float64, name, engine_name string
 
 	m.cellmsg = make([]cell_msg, 4)
 	m.cell = create_map(x, y)
+	m.cell2 = create_map(x, y)
 	m.cellmsg[0].dir = Dir_Nort
 	m.cellmsg[1].dir = Dir_East
 	m.cellmsg[2].dir = Dir_West
@@ -107,9 +110,19 @@ func AM_cellcheck(instance_time, destruct_time float64, name, engine_name string
 func (m *cell_check) Ext_trans(port string, msg *system.SysMessage) {
 	//player가 해당 셀에 왔음
 	if port == "check" {
+		file1, _ := os.Create("map.csv")
+
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		m.pos = data[0].(pos)
+		m.cell2[m.pos.x][m.pos.y] = -2
+		for i := 0; i < 100; i++ {
+			for j := 0; j < 100; j++ {
+				fmt.Fprint(file1, m.cell2[j][i], ",")
+			}
+			fmt.Fprintln(file1)
+		}
+		file1.Close()
 		fmt.Println("State: cell check")
 		m.executor.Cur_state = "CHECK"
 	}
@@ -124,10 +137,10 @@ func (m *cell_check) Output() *system.SysMessage {
 	m.cellmsg[2].pos.x = m.pos.x - 1
 	m.cellmsg[3].pos.x = m.pos.x
 
-	m.cellmsg[0].pos.y = m.pos.y + 1
+	m.cellmsg[0].pos.y = m.pos.y - 1
 	m.cellmsg[1].pos.y = m.pos.y
 	m.cellmsg[2].pos.y = m.pos.y
-	m.cellmsg[3].pos.y = m.pos.y - 1
+	m.cellmsg[3].pos.y = m.pos.y + 1
 
 	// 1 = block
 	for i := 0; i < 4; i++ {
