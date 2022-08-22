@@ -18,22 +18,23 @@ import (
 
 type SysExecutor struct {
 	// sysObject     *system.SysObject
-	Behaviormodel      *model.Behaviormodel
-	dmc                *DefaultMessageCatcher
-	global_time        float64
-	target_time        float64
-	time_step          float64
-	EXTERNAL_SRC       string
-	EXTERNAL_DST       string
-	simulation_mode    int
-	min_schedule_item  []*BehaviorModelExecutor
-	input_event_queue  input_heap
-	output_event_queue []*o_event_queue
-	sim_mode           string
-	waiting_obj_map    map[float64][]*BehaviorModelExecutor
-	active_obj_map     map[float64]*BehaviorModelExecutor
-	port_map           map[Object][]Object
-	sim_init_time      time.Time
+	Behaviormodel       *model.Behaviormodel
+	dmc                 *DefaultMessageCatcher
+	global_time         float64
+	target_time         float64
+	time_step           float64
+	EXTERNAL_SRC        string
+	EXTERNAL_DST        string
+	simulation_mode     int
+	min_schedule_item   []*BehaviorModelExecutor
+	input_event_queue   input_heap
+	output_event_queue  []*o_event_queue
+	sim_mode            string
+	waiting_obj_map     map[float64][]*BehaviorModelExecutor
+	waiting_obj_map_prl map[float64][]*BehaviorModelExecutor
+	active_obj_map      map[float64]*BehaviorModelExecutor
+	port_map            map[Object][]Object
+	sim_init_time       time.Time
 }
 
 //생성자
@@ -67,7 +68,11 @@ func (se SysExecutor) Get_global_time() float64 {
 func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 	se.waiting_obj_map[sim_obj.Get_create_time()] = append(se.waiting_obj_map[sim_obj.Get_create_time()], sim_obj)
 	// waiting_obj_map 에 create_time 별로 슬라이스를 만들어서 sim_obj 를 append 한다.
+}
 
+func (se *SysExecutor) Register_entity_Parallel(sim_obj *BehaviorModelExecutor) {
+	// 병렬처리용 sim_obj_map
+	se.waiting_obj_map_prl[sim_obj.Get_create_time()] = append(se.waiting_obj_map_prl[sim_obj.Get_create_time()], sim_obj)
 }
 
 func (se *SysExecutor) Create_entity() {
@@ -92,10 +97,8 @@ func (se *SysExecutor) Create_entity() {
 			delete(se.waiting_obj_map, key)
 
 			Sort_MSI(se.min_schedule_item)
-
 		}
 	}
-
 }
 
 func (se *SysExecutor) Destory_entity() {
@@ -146,7 +149,6 @@ func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_por
 		src := Object{src_obj, out_port}
 		se.port_map[src] = append(se.port_map[src], dst)
 	}
-
 }
 
 func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
@@ -193,7 +195,6 @@ func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.S
 	if !(msg == nil) {
 		se.Single_output_handling(obj, msg)
 	}
-
 }
 
 func (se *SysExecutor) Init_sim() {
@@ -215,7 +216,6 @@ func (se *SysExecutor) Init_sim() {
 			se.min_schedule_item = append(se.min_schedule_item, obj)
 		}
 	}
-
 }
 
 func (se *SysExecutor) Schedule() {
