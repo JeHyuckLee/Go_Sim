@@ -72,6 +72,7 @@ func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 
 func (se *SysExecutor) Register_entity_Parallel(sim_obj *BehaviorModelExecutor) {
 	// 병렬처리용 sim_obj_map
+	se.Register_entity(sim_obj)
 	se.waiting_obj_map_prl[sim_obj.Get_create_time()] = append(se.waiting_obj_map_prl[sim_obj.Get_create_time()], sim_obj)
 }
 
@@ -130,7 +131,6 @@ func (se *SysExecutor) Destory_entity() {
 			//mim_schedule_item에서도 지운다.
 		}
 	}
-
 }
 
 func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_port string, dst_obj *BehaviorModelExecutor, in_port string) {
