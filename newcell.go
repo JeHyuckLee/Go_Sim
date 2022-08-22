@@ -115,7 +115,7 @@ func (m *cell_check) Ext_trans(port string, msg *system.SysMessage) {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		m.pos = data[0].(pos)
-		m.cell2[m.pos.x][m.pos.y] = -2
+		m.cell2[m.pos.x][m.pos.y] = +2
 		for i := 0; i < 100; i++ {
 			for j := 0; j < 100; j++ {
 				fmt.Fprint(file1, m.cell2[j][i], ",")

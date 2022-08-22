@@ -113,18 +113,20 @@ func (m *move) Int_trans() {
 
 //player의 원자모델
 type think struct {
-	executor  *executor.BehaviorModelExecutor
-	ahead     Ahead
-	pos       pos
-	input_msg []cell_msg
-	nx, ny    int
-	flag      bool
+	executor   *executor.BehaviorModelExecutor
+	ahead      Ahead
+	pos        pos
+	input_msg  []cell_msg
+	nx, ny     int
+	flag       bool
+	right_flag bool
 }
 
 func AM_think(instance_time, destruct_time float64, name, engine_name string) *think {
 	m := think{}
 	m.pos.x = 0
 	m.pos.y = 0
+	m.right_flag = false
 	m.flag = false
 	m.set_Ahead(Dir(3))
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
@@ -155,38 +157,41 @@ func (m *think) Ext_trans(port string, msg *system.SysMessage) {
 }
 
 func (m *think) Output() *system.SysMessage {
-	for i := 0; i < 4; i++ {
-		if m.ahead.right == m.input_msg[i].dir && m.flag == false {
-			if m.input_msg[i].block == 0 {
+	for i := 0; i < len(m.input_msg); i++ {
+		direction := m.input_msg[i].dir
+		block := m.input_msg[i].block
+		if m.ahead.right == direction && m.right_flag == false {
+			if block == 0 {
 				m.turnRight()
 				msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
 				output_msg := m.ahead
 				msg.Insert(output_msg)
-				return msg
-			} else if m.input_msg[i].block == 1 {
 				m.flag = true
-				i = -1
+				return msg
+			} else if block == 1 {
+				m.right_flag = true
+				m.flag = false
 			}
 		} else if m.flag == true {
-			if m.ahead.front == m.input_msg[i].dir {
-				if m.input_msg[i].block == 0 {
+			if m.ahead.front == direction {
+				if block == 0 {
 					msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "move")
 					output_msg := m.ahead
 					msg.Insert(output_msg)
+					m.flag = true
 					return msg
-				} else if m.input_msg[i].block == 1 {
+				} else if block == 1 {
 					m.turnLeft()
-					i = -1
+					m.flag = false
 				}
 			}
 		}
 	}
-
 	return nil
 }
 
 func (m *think) Int_trans() {
-	if m.executor.Cur_state == "THINK" {
+	if m.executor.Cur_state == "THINK" && m.flag == true {
 		m.executor.Cur_state = "IDLE"
 	} else {
 		m.executor.Cur_state = "THINK"

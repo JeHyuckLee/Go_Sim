@@ -250,7 +250,6 @@ func (se *SysExecutor) Schedule() {
 
 		tuple_obj = se.min_schedule_item[0]
 		se.min_schedule_item = remove(se.min_schedule_item, 0)
-
 	}
 
 	se.min_schedule_item = append([]*BehaviorModelExecutor{tuple_obj}, se.min_schedule_item...)
