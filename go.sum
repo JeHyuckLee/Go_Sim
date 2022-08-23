@@ -6,5 +6,7 @@ github.com/jfcg/sorty/v2 v2.0.8 h1:x8vUzFP7KADIrEsGdrn3vHynpr72zmOVwUezoZnMG4w=
 github.com/jfcg/sorty/v2 v2.0.8/go.mod h1:KIEfHyaX4UWOg0mTYJEtpfVaXssBgjH7UXcWcJeLcJ8=
 gopkg.in/getlantern/deepcopy.v1 v1.0.0-20140913144530-b923171e8640 h1:fAfAHq363jp6NTMDHNe4EhfiIBPRR0JFJuBefZyVLaM=
 gopkg.in/getlantern/deepcopy.v1 v1.0.0-20140913144530-b923171e8640/go.mod h1:FeLAK3+BLfs7XMpGW8/75D+a2nq5bemZgvOR5BkhcYA=
+gopkg.in/zeromq/goczmq.v4 v4.1.0 h1:CE+FE81mGVs2aSlnbfLuS1oAwdcVywyMM2AC1g33imI=
+gopkg.in/zeromq/goczmq.v4 v4.1.0/go.mod h1:h4IlfePEYMpFdywGr5gAwKhBBj+hiBl/nF4VoSE4k+0=
 winterdrache.de/golib v0.0.0-20180611202533-782cc2630c6f h1:2EwLocAjr996KiP/EkFhd1Au0ejDZFCVf1KLJe6s+3E=
 winterdrache.de/golib v0.0.0-20180611202533-782cc2630c6f/go.mod h1:EEaUF0svVcYFqVVZuUzu7m/+2AdtRtqlXqyzqlkbaw4=

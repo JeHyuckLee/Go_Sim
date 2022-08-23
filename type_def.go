@@ -42,11 +42,20 @@ func create_map(width int, heigth int) [][]int {
 		cell_map[i] = make([]int, width)
 
 		for j := 0; j < width; j++ {
+
+			if i == 0 {
+				cell_map[i][j] = 1
+			} else if i == heigth-1 {
+				cell_map[i][j] = 1
+			} else if j == 0 {
+				cell_map[i][j] = 1
+			} else if j == width-1 {
+				cell_map[i][j] = 1
+			} else {
+				cell_map[i][j] = 0
+			}
 			//cell의 원자모델 들 생성
-
-			cell_map[i][j] = 0
 		}
-
 	}
 
 	return cell_map
