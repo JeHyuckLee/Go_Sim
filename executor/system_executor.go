@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -34,6 +35,8 @@ type SysExecutor struct {
 	active_obj_map     map[float64]*BehaviorModelExecutor
 	port_map           map[Object][]Object
 	sim_init_time      time.Time
+	parallel_entity    []*BehaviorModelExecutor
+	parallel_obj       []*BehaviorModelExecutor
 }
 
 //생성자
@@ -57,6 +60,7 @@ func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecuto
 	se.sim_init_time = time.Now()
 	se.input_event_queue = input_heap{}
 	heap.Init(&se.input_event_queue)
+
 	return se
 }
 
@@ -67,7 +71,10 @@ func (se SysExecutor) Get_global_time() float64 {
 func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 	se.waiting_obj_map[sim_obj.Get_create_time()] = append(se.waiting_obj_map[sim_obj.Get_create_time()], sim_obj)
 	// waiting_obj_map 에 create_time 별로 슬라이스를 만들어서 sim_obj 를 append 한다.
+}
 
+func (se *SysExecutor) Register_parallel_entity(obj *BehaviorModelExecutor) {
+	se.parallel_entity = append(se.parallel_entity, obj)
 }
 
 func (se *SysExecutor) Create_entity() {
@@ -221,6 +228,7 @@ func (se *SysExecutor) Schedule() {
 	se.Create_entity()
 	se.Handle_external_input_event()
 
+	wg := sync.WaitGroup{}
 	tuple_obj := se.min_schedule_item[0]
 	se.min_schedule_item = remove(se.min_schedule_item, 0)
 
@@ -234,17 +242,39 @@ func (se *SysExecutor) Schedule() {
 		if t > epsilon {
 			break
 		}
-
-		msg := tuple_obj.Output()
-
-		if msg != nil {
-			se.output_handling(tuple_obj, msg)
+		for _, v := range se.parallel_entity {
+			if tuple_obj.Get_req_time() == v.Get_req_time() {
+				se.parallel_obj = append(se.parallel_obj, v)
+			}
 		}
-		tuple_obj.Int_trans()
-		req_t := tuple_obj.Get_req_time()
-		tuple_obj.Set_req_time(req_t, 0)
-		se.min_schedule_item = append(se.min_schedule_item, tuple_obj)
+		for _, parallel_obj := range se.parallel_obj {
+			for i, item := range se.min_schedule_item {
+				if parallel_obj == item {
+					fmt.Println("1")
+					se.min_schedule_item = remove(se.min_schedule_item, i)
+				}
+			}
+		}
+		for _, v := range se.parallel_obj {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				fmt.Println("obj =", v, "global time:", se.Get_global_time())
+				msg := v.Output()
 
+				if msg != nil {
+					se.output_handling(v, msg)
+				}
+				v.Int_trans()
+				req_t := v.Get_req_time()
+				v.Set_req_time(req_t, 0)
+
+				se.min_schedule_item = append(se.min_schedule_item, v)
+
+			}()
+		}
+
+		wg.Wait()
 		Sort_MSI(se.min_schedule_item)
 
 		tuple_obj = se.min_schedule_item[0]
