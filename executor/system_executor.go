@@ -18,23 +18,24 @@ import (
 
 type SysExecutor struct {
 	// sysObject     *system.SysObject
-	Behaviormodel       *model.Behaviormodel
-	dmc                 *DefaultMessageCatcher
-	global_time         float64
-	target_time         float64
-	time_step           float64
-	EXTERNAL_SRC        string
-	EXTERNAL_DST        string
-	simulation_mode     int
-	min_schedule_item   []*BehaviorModelExecutor
-	input_event_queue   input_heap
-	output_event_queue  []*o_event_queue
-	sim_mode            string
-	waiting_obj_map     map[float64][]*BehaviorModelExecutor
-	waiting_obj_map_prl map[float64][]*BehaviorModelExecutor
-	active_obj_map      map[float64]*BehaviorModelExecutor
-	port_map            map[Object][]Object
-	sim_init_time       time.Time
+	Behaviormodel      *model.Behaviormodel
+	dmc                *DefaultMessageCatcher
+	global_time        float64
+	target_time        float64
+	time_step          float64
+	EXTERNAL_SRC       string
+	EXTERNAL_DST       string
+	simulation_mode    int
+	min_schedule_item  []*BehaviorModelExecutor
+	input_event_queue  input_heap
+	output_event_queue []*o_event_queue
+	sim_mode           string
+	waiting_obj_map    map[float64][]*BehaviorModelExecutor
+	active_obj_map     map[float64]*BehaviorModelExecutor
+	port_map           map[Object][]Object
+	sim_init_time      time.Time
+	parallel_entity    []*BehaviorModelExecutor
+	parallel_obj       []*BehaviorModelExecutor
 }
 
 //생성자
@@ -58,6 +59,7 @@ func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecuto
 	se.sim_init_time = time.Now()
 	se.input_event_queue = input_heap{}
 	heap.Init(&se.input_event_queue)
+
 	return se
 }
 
@@ -70,10 +72,8 @@ func (se *SysExecutor) Register_entity(sim_obj *BehaviorModelExecutor) {
 	// waiting_obj_map 에 create_time 별로 슬라이스를 만들어서 sim_obj 를 append 한다.
 }
 
-func (se *SysExecutor) Register_entity_Parallel(sim_obj *BehaviorModelExecutor) {
-	// 병렬처리용 sim_obj_map
-	se.Register_entity(sim_obj)
-	se.waiting_obj_map_prl[sim_obj.Get_create_time()] = append(se.waiting_obj_map_prl[sim_obj.Get_create_time()], sim_obj)
+func (se *SysExecutor) Register_parallel_entity(obj *BehaviorModelExecutor) {
+	se.parallel_entity = append(se.parallel_entity, obj)
 }
 
 func (se *SysExecutor) Create_entity() {
@@ -98,8 +98,10 @@ func (se *SysExecutor) Create_entity() {
 			delete(se.waiting_obj_map, key)
 
 			Sort_MSI(se.min_schedule_item)
+
 		}
 	}
+
 }
 
 func (se *SysExecutor) Destory_entity() {
@@ -131,6 +133,7 @@ func (se *SysExecutor) Destory_entity() {
 			//mim_schedule_item에서도 지운다.
 		}
 	}
+
 }
 
 func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_port string, dst_obj *BehaviorModelExecutor, in_port string) {
@@ -149,6 +152,7 @@ func (se *SysExecutor) Coupling_relation(src_obj *BehaviorModelExecutor, out_por
 		src := Object{src_obj, out_port}
 		se.port_map[src] = append(se.port_map[src], dst)
 	}
+
 }
 
 func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
@@ -170,7 +174,6 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 	}
 
 	dst := se.port_map[pair]
-
 	if dst == nil { //도착지가없다
 		err := func() error {
 			return errors.New("destination not found")
@@ -187,7 +190,6 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 			v.object.Set_req_time(se.global_time, 0)
 		}
 	}
-
 }
 
 func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
@@ -216,6 +218,7 @@ func (se *SysExecutor) Init_sim() {
 			se.min_schedule_item = append(se.min_schedule_item, obj)
 		}
 	}
+
 }
 
 func (se *SysExecutor) Schedule() {
