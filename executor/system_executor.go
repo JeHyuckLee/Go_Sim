@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sync"
 	"time"
 
 	"github.com/gammazero/deque"
@@ -60,7 +59,6 @@ func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecuto
 	se.sim_init_time = time.Now()
 	se.input_event_queue = input_heap{}
 	heap.Init(&se.input_event_queue)
-
 	return se
 }
 
@@ -228,7 +226,6 @@ func (se *SysExecutor) Schedule() {
 	se.Create_entity()
 	se.Handle_external_input_event()
 
-	wg := sync.WaitGroup{}
 	tuple_obj := se.min_schedule_item[0]
 	se.min_schedule_item = remove(se.min_schedule_item, 0)
 
@@ -242,39 +239,18 @@ func (se *SysExecutor) Schedule() {
 		if t > epsilon {
 			break
 		}
-		for _, v := range se.parallel_entity {
-			if tuple_obj.Get_req_time() == v.Get_req_time() {
-				se.parallel_obj = append(se.parallel_obj, v)
-			}
+
+		fmt.Println("obj =", tuple_obj, "global time:", se.Get_global_time())
+		msg := tuple_obj.Output()
+
+		if msg != nil {
+			se.output_handling(tuple_obj, msg)
 		}
-		for _, parallel_obj := range se.parallel_obj {
-			for i, item := range se.min_schedule_item {
-				if parallel_obj == item {
-					fmt.Println("1")
-					se.min_schedule_item = remove(se.min_schedule_item, i)
-				}
-			}
-		}
-		for _, v := range se.parallel_obj {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				fmt.Println("obj =", v, "global time:", se.Get_global_time())
-				msg := v.Output()
+		tuple_obj.Int_trans()
+		req_t := tuple_obj.Get_req_time()
+		tuple_obj.Set_req_time(req_t, 0)
+		se.min_schedule_item = append(se.min_schedule_item, tuple_obj)
 
-				if msg != nil {
-					se.output_handling(v, msg)
-				}
-				v.Int_trans()
-				req_t := v.Get_req_time()
-				v.Set_req_time(req_t, 0)
-
-				se.min_schedule_item = append(se.min_schedule_item, v)
-
-			}()
-		}
-
-		wg.Wait()
 		Sort_MSI(se.min_schedule_item)
 
 		tuple_obj = se.min_schedule_item[0]
