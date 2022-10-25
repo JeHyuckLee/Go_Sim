@@ -124,7 +124,3 @@ func main() {
 	sim.Simulate(definition.Infinite)
 
 }
-
-func remove(slice []interface{}, s int) []interface{} {
-	return append(slice[:s], slice[s+1:]...)
-}
