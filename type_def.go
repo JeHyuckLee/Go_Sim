@@ -21,6 +21,7 @@ func Sales(n int, t []tomato) []tomato {
 		t[0].Quantity = t[0].Quantity - n
 		return t
 	}
+	return nil
 }
 
 func remove(slice []tomato, s int) []tomato {
