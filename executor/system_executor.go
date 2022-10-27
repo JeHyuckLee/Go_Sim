@@ -240,7 +240,6 @@ func (se *SysExecutor) Schedule() {
 			break
 		}
 
-		fmt.Println("obj =", tuple_obj, "global time:", se.Get_global_time())
 		msg := tuple_obj.Output()
 
 		if msg != nil {
@@ -261,6 +260,7 @@ func (se *SysExecutor) Schedule() {
 	se.min_schedule_item = append([]*BehaviorModelExecutor{tuple_obj}, se.min_schedule_item...)
 
 	se.global_time += se.time_step
+	fmt.Println("global_time:", se.Get_global_time())
 	se.Destory_entity()
 }
 

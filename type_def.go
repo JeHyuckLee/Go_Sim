@@ -1,62 +1,62 @@
 package main
 
-type Dir int
+import (
+	"fmt"
 
-const (
-	Dir_Nort = iota
-	Dir_East
-	Dir_West
-	Dir_South
-	DIR_COUNT
+	"github.com/jfcg/sorty/v2"
 )
 
-type Ahead struct {
-	front Dir
-	back  Dir
-	left  Dir
-	right Dir
+type tomato struct {
+	Quantity int
+	Period   int
 }
 
-type pos struct {
-	x int
-	y int
-}
-
-type cell_msg struct {
-	dir   Dir
-	pos   pos
-	block int
-}
-
-type cell_to_player_msg struct {
-	dir Dir
-	pos pos
-}
-
-func create_map(width int, heigth int) [][]int {
-
-	cell_map := make([][]int, heigth)
-
-	for i := 0; i < heigth; i++ {
-
-		cell_map[i] = make([]int, width)
-
-		for j := 0; j < width; j++ {
-
-			if i == 0 {
-				cell_map[i][j] = 1
-			} else if i == heigth-1 {
-				cell_map[i][j] = 1
-			} else if j == 0 {
-				cell_map[i][j] = 1
-			} else if j == width-1 {
-				cell_map[i][j] = 1
-			} else {
-				cell_map[i][j] = 0
-			}
-			//cell의 원자모델 들 생성
-		}
+func (t *tomato) Next_day() {
+	if t.Period > 0 {
+		t.Period -= 1
+	} else {
+		fmt.Println("??")
 	}
 
-	return cell_map
+}
+
+func remove_tomato(slice *[]tomato, s int) []tomato {
+	return append((*slice)[:s], (*slice)[s+1:]...)
+}
+
+func Sort_tomato(b *[]tomato) {
+	lsw := func(i, k, r, s int) bool {
+		if (*b)[i].Period < (*b)[k].Period {
+			if r != s {
+				(*b)[r], (*b)[s] = (*b)[s], (*b)[r]
+			}
+			return true
+		}
+		return false
+	}
+	sorty.Sort(len((*b)), lsw)
+}
+
+func Sales(n int, t *[]tomato) *[]tomato {
+
+	if (*t)[0].Quantity < n {
+		rest := n - (*t)[0].Quantity
+		(*t) = remove_tomato(t, 0)
+		Sales(rest, t)
+	} else if (*t)[0].Quantity == n {
+		// t = remove_tomato(t, 0)
+		return t
+	} else {
+		(*t)[0].Quantity = (*t)[0].Quantity - n
+		return t
+	}
+	return nil
+}
+
+func total_tomato(t *[]tomato) int {
+	var total = 0
+	for _, v := range *t {
+		total += v.Quantity
+	}
+	return total
 }
