@@ -75,7 +75,7 @@ func main() {
 
 	for _, v := range memberList {
 		crop := rand_crop(v.aver, v.std)
-		member := CM_coopMember(0, 150, "member", "sname", v.area, crop, 50)
+		member := CM_coopMember(0, 150, "member", "sname", v.area, crop, 100)
 		sim.Register_entity(member.am_harvest.executor)
 		sim.Register_entity(member.am_seed.executor)
 		sim.Register_entity(member.am_ship.executor)

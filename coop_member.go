@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
+	"encoding/csv"
 	"evsim_golang/definition"
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
+	"os"
 )
 
 // CoopMember
@@ -42,8 +45,8 @@ func AM_seed(instance_time, destruct_time float64, name, engine_name string, are
 	m.harvest = harvest
 
 	//statef
-	m.executor.Behaviormodel.Insert_state("IDLE", 50)
-	m.executor.Behaviormodel.Insert_state("SEEDING", 1) //나중에 멤버에게 입력받아서 집어넣어야함
+	m.executor.Behaviormodel.Insert_state("IDLE", 70)
+	m.executor.Behaviormodel.Insert_state("SEEDING", 30) //나중에 멤버에게 입력받아서 집어넣어야함
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -100,7 +103,7 @@ func AM_harvest(instance_time, destruct_time float64, name, engine_name string, 
 	m.harvest = harvest
 	//state
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	m.executor.Behaviormodel.Insert_state("HARVEST", 1)
+	m.executor.Behaviormodel.Insert_state("HARVEST", 30)
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -180,8 +183,22 @@ func (m *coopMember_ship) Ext_trans(port string, msg *system.SysMessage) {
 func (m *coopMember_ship) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
 	fmt.Println("member Shipment quantity: ", m.tomato.Quantity)
+	m.executor.Behaviormodel.CoreModel.Get_name()
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
 	msg.Insert(m.tomato)
+
+	file, err := os.Create("./output.csv")
+	if err != nil {
+		panic(err)
+	}
+
+	// csv writer 생성
+	wr := csv.NewWriter(bufio.NewWriter(file))
+
+	// csv 내용 쓰기
+	wr.Write([]string{"A", "0.25"})
+	wr.Write([]string{"B", "55.70"})
+	wr.Flush()
 
 	return msg
 }

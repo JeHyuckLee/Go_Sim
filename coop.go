@@ -131,6 +131,7 @@ func (m *coop_management) Int_trans() {
 				}
 
 			}
+
 		}
 		m.executor.Cur_state = "CHECK"
 	} else {
