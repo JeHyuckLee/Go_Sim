@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"encoding/csv"
 	"evsim_golang/definition"
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
-	"os"
 )
 
 // CoopMember
@@ -186,19 +183,6 @@ func (m *coopMember_ship) Output() *system.SysMessage {
 	m.executor.Behaviormodel.CoreModel.Get_name()
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
 	msg.Insert(m.tomato)
-
-	file, err := os.Create("./output.csv")
-	if err != nil {
-		panic(err)
-	}
-
-	// csv writer 생성
-	wr := csv.NewWriter(bufio.NewWriter(file))
-
-	// csv 내용 쓰기
-	wr.Write([]string{"A", "0.25"})
-	wr.Write([]string{"B", "55.70"})
-	wr.Flush()
 
 	return msg
 }
