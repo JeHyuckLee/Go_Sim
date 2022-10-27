@@ -5,7 +5,6 @@ import (
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
-	"os"
 )
 
 // Cooperative
@@ -19,10 +18,10 @@ type cm_coop struct {
 func CM_coop(instance_time, destruct_time float64, name, engine_name string, storage_period int) *cm_coop {
 
 	coop := cm_coop{}
-	file, err := os.Create("./output.csv")
-	if err != nil {
-		panic(err)
-	}
+	// file, err := os.Create("./output.csv")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	coop.am_ware = AM_ware(instance_time, destruct_time, name, engine_name, &coop.inventory)
 	coop.am_management = AM_management(instance_time, destruct_time, name, engine_name, storage_period, &coop.inventory)
@@ -184,6 +183,7 @@ func (m *coop_shipment) Ext_trans(port string, msg *system.SysMessage) {
 			m.executor.Cur_state = "SHIPMENT"
 		} else {
 			fmt.Println("재고가없어서 못팜")
+
 		}
 
 	}
