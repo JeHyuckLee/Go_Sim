@@ -59,7 +59,6 @@ func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecuto
 	se.sim_init_time = time.Now()
 	se.input_event_queue = input_heap{}
 	heap.Init(&se.input_event_queue)
-
 	return se
 }
 
@@ -190,6 +189,7 @@ func (se *SysExecutor) Single_output_handling(obj *BehaviorModelExecutor, msg *s
 			v.object.Set_req_time(se.global_time, 0)
 		}
 	}
+
 }
 
 func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.SysMessage) {
@@ -197,6 +197,7 @@ func (se *SysExecutor) output_handling(obj *BehaviorModelExecutor, msg *system.S
 	if !(msg == nil) {
 		se.Single_output_handling(obj, msg)
 	}
+
 }
 
 func (se *SysExecutor) Init_sim() {
@@ -253,11 +254,13 @@ func (se *SysExecutor) Schedule() {
 
 		tuple_obj = se.min_schedule_item[0]
 		se.min_schedule_item = remove(se.min_schedule_item, 0)
+
 	}
 
 	se.min_schedule_item = append([]*BehaviorModelExecutor{tuple_obj}, se.min_schedule_item...)
 
 	se.global_time += se.time_step
+	fmt.Println("global_time:", se.Get_global_time())
 	se.Destory_entity()
 }
 
