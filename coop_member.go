@@ -14,7 +14,7 @@ type cm_coopMember struct {
 	am_ship    *coopMember_ship
 }
 
-func CM_coopMember(instance_time, destruct_time float64, name, engine_name string, area int, harvest int, period int) *cm_coopMember {
+func CM_coopMember(instance_time, destruct_time float64, name, engine_name string, area int, harvest float64, period int) *cm_coopMember {
 
 	cell := cm_coopMember{}
 	cell.am_seed = AM_seed(instance_time, destruct_time, name, engine_name, area, harvest)
@@ -28,11 +28,11 @@ func CM_coopMember(instance_time, destruct_time float64, name, engine_name strin
 type coopMember_seed struct {
 	executor *executor.BehaviorModelExecutor
 	area     int
-	harvest  int
+	harvest  float64
 	msg      *system.SysMessage
 }
 
-func AM_seed(instance_time, destruct_time float64, name, engine_name string, area int, harvest int) *coopMember_seed {
+func AM_seed(instance_time, destruct_time float64, name, engine_name string, area int, harvest float64) *coopMember_seed {
 	m := &coopMember_seed{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = m
@@ -83,13 +83,13 @@ func (m *coopMember_seed) Int_trans() {
 type coopMember_harvest struct {
 	executor *executor.BehaviorModelExecutor
 	area     int
-	harvest  int
+	harvest  float64
 	period   int
 	tomato   tomato
 	msg      *system.SysMessage
 }
 
-func AM_harvest(instance_time, destruct_time float64, name, engine_name string, area int, harvest int, period int) *coopMember_harvest {
+func AM_harvest(instance_time, destruct_time float64, name, engine_name string, area int, harvest float64, period int) *coopMember_harvest {
 	m := &coopMember_harvest{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = m
@@ -116,7 +116,7 @@ func (m *coopMember_harvest) Ext_trans(port string, msg *system.SysMessage) {
 		fmt.Println("[Seeding] => [Harvest]")
 		m.executor.Cancel_rescheduling()
 
-		m.tomato = tomato{m.harvest, m.period}
+		m.tomato = tomato{int(m.harvest), m.period}
 		m.executor.Cur_state = "HARVEST"
 	}
 

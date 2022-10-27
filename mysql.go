@@ -1,38 +1,34 @@
 package main
 
-// import (
-// 	"database/sql"
-// 	"fmt"
+import (
+	"database/sql"
+	"fmt"
 
-// 	_ "github.com/go-sql-driver/mysql"
-// )
+	_ "github.com/go-sql-driver/mysql"
+)
 
-// const (
-// 	host     = "inventory.c9ibzimhazfs.ap-northeast-2.rds.amazonaws.com"
-// 	database = "erp"
-// 	user     = "bs"
-// 	password = "asdf2345"
-// )
+const (
+	host     = "inventory.c9ibzimhazfs.ap-northeast-2.rds.amazonaws.com"
+	database = "erp"
+	user     = "bs"
+	password = "asdf2345"
+)
 
-// func checkError(err error) {
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// }
+func checkError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 
-// type data struct {
-// 	id string `json:"Coop_login_id"`
-// }
+func GetConnector() *sql.DB {
+	var connectionString = fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?allowNativePasswords=true", user, password, host, database)
 
-// func GetConnector() *sql.DB {
-// 	var connectionString = fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?allowNativePasswords=true", user, password, host, database)
+	// Initialize connection object.
+	db, err := sql.Open("mysql", connectionString)
+	checkError(err)
 
-// 	// Initialize connection object.
-// 	db, err := sql.Open("mysql", connectionString)
-// 	checkError(err)
-
-// 	return db
-// }
+	return db
+}
 
 // func main() {
 // 	db := GetConnector()

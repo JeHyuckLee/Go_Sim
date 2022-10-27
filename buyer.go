@@ -18,7 +18,7 @@ func AM_buyer(instance_time, destruct_time float64, name, engine_name string, bu
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = m
 	m.buy = buy
-	m.executor.Behaviormodel.Insert_state("IDLE", 15)
+	m.executor.Behaviormodel.Insert_state("IDLE", 50)
 	m.executor.Behaviormodel.Insert_state("BUY", 1) //나중에 멤버에게 입력받아서 집어넣어야함
 	m.executor.Init_state("IDLE")
 
