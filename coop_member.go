@@ -143,8 +143,9 @@ func (m *coopMember_harvest) Int_trans() {
 type coopMember_ship struct {
 	executor *executor.BehaviorModelExecutor
 	shipment int
-	tomato   tomato
-	msg      *system.SysMessage
+
+	tomato tomato
+	msg    *system.SysMessage
 }
 
 func AM_ship(instance_time, destruct_time float64, name, engine_name string) *coopMember_ship {
@@ -180,7 +181,7 @@ func (m *coopMember_ship) Ext_trans(port string, msg *system.SysMessage) {
 func (m *coopMember_ship) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
 	fmt.Println("member Shipment quantity: ", m.tomato.Quantity)
-	m.executor.Behaviormodel.CoreModel.Get_name()
+
 	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "in")
 	msg.Insert(m.tomato)
 
