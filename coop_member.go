@@ -14,7 +14,9 @@ type cm_coopMember struct {
 	am_ship    *coopMember_ship
 }
 
-func CM_coopMember(instance_time, destruct_time float64, name, engine_name string, area int, harvest float64, period int) *cm_coopMember {
+
+func CM_coopMember(instance_time, destruct_time float64, name, engine_name string, area int, harvest int, period int) *cm_coopMember {
+
 
 	cell := cm_coopMember{}
 	cell.am_seed = AM_seed(instance_time, destruct_time, name, engine_name, area, harvest)
@@ -28,11 +30,13 @@ func CM_coopMember(instance_time, destruct_time float64, name, engine_name strin
 type coopMember_seed struct {
 	executor *executor.BehaviorModelExecutor
 	area     int
-	harvest  float64
+
+	harvest  int
 	msg      *system.SysMessage
 }
 
-func AM_seed(instance_time, destruct_time float64, name, engine_name string, area int, harvest float64) *coopMember_seed {
+func AM_seed(instance_time, destruct_time float64, name, engine_name string, area int, harvest int) *coopMember_seed {
+
 	m := &coopMember_seed{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = m
@@ -42,8 +46,10 @@ func AM_seed(instance_time, destruct_time float64, name, engine_name string, are
 	m.harvest = harvest
 
 	//statef
-	m.executor.Behaviormodel.Insert_state("IDLE", 70)
-	m.executor.Behaviormodel.Insert_state("SEEDING", 30) //나중에 멤버에게 입력받아서 집어넣어야함
+
+	m.executor.Behaviormodel.Insert_state("IDLE", 50)
+	m.executor.Behaviormodel.Insert_state("SEEDING", 1) //나중에 멤버에게 입력받아서 집어넣어야함
+
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -83,13 +89,17 @@ func (m *coopMember_seed) Int_trans() {
 type coopMember_harvest struct {
 	executor *executor.BehaviorModelExecutor
 	area     int
-	harvest  float64
+
+	harvest  int
+
 	period   int
 	tomato   tomato
 	msg      *system.SysMessage
 }
 
-func AM_harvest(instance_time, destruct_time float64, name, engine_name string, area int, harvest float64, period int) *coopMember_harvest {
+
+func AM_harvest(instance_time, destruct_time float64, name, engine_name string, area int, harvest int, period int) *coopMember_harvest {
+
 	m := &coopMember_harvest{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = m
@@ -100,7 +110,9 @@ func AM_harvest(instance_time, destruct_time float64, name, engine_name string, 
 	m.harvest = harvest
 	//state
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
+
 	m.executor.Behaviormodel.Insert_state("HARVEST", 30)
+
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -116,7 +128,9 @@ func (m *coopMember_harvest) Ext_trans(port string, msg *system.SysMessage) {
 		fmt.Println("[Seeding] => [Harvest]")
 		m.executor.Cancel_rescheduling()
 
-		m.tomato = tomato{int(m.harvest), m.period}
+
+		m.tomato = tomato{m.harvest, m.period}
+
 		m.executor.Cur_state = "HARVEST"
 	}
 
@@ -144,8 +158,9 @@ type coopMember_ship struct {
 	executor *executor.BehaviorModelExecutor
 	shipment int
 
-	tomato tomato
-	msg    *system.SysMessage
+	tomato   tomato
+	msg      *system.SysMessage
+
 }
 
 func AM_ship(instance_time, destruct_time float64, name, engine_name string) *coopMember_ship {

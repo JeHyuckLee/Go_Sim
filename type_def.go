@@ -1,8 +1,8 @@
+
 package main
 
 import (
 	"fmt"
-	"math/rand"
 
 	"github.com/jfcg/sorty/v2"
 )
@@ -60,9 +60,4 @@ func total_tomato(t *[]tomato) int {
 		total += v.Quantity
 	}
 	return total
-}
-
-func rand_crop(average float64, std float64) float64 {
-	rand_std := (rand.Float64() * std * 2) - std
-	return average - rand_std
 }

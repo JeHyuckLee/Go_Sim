@@ -19,6 +19,7 @@ func CM_coop(instance_time, destruct_time float64, name, engine_name string, sto
 
 	coop := cm_coop{}
 
+
 	coop.am_ware = AM_ware(instance_time, destruct_time, name, engine_name, &coop.inventory)
 	coop.am_management = AM_management(instance_time, destruct_time, name, engine_name, storage_period, &coop.inventory)
 	coop.am_shipment = AM_shipment(instance_time, destruct_time, name, engine_name, &coop.inventory)
@@ -30,7 +31,9 @@ func CM_coop(instance_time, destruct_time float64, name, engine_name string, sto
 type coop_ware struct {
 	executor  *executor.BehaviorModelExecutor
 	inventory *[]tomato
+
 	ware      []int
+
 	received  tomato
 	msg       *system.SysMessage
 }
@@ -41,9 +44,11 @@ func AM_ware(instance_time, destruct_time float64, name, engine_name string, inv
 	m.executor.AbstractModel = m
 
 	m.inventory = inventory
+
 	for i := 0; i < 12; i++ {
 		m.ware = append(m.ware, 0)
 	}
+
 
 	//statef
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
@@ -57,11 +62,13 @@ func AM_ware(instance_time, destruct_time float64, name, engine_name string, inv
 }
 
 func (m *coop_ware) Ext_trans(port string, msg *system.SysMessage) {
+
 	if port == "in" {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
 		m.received = data[0].(tomato)
 		*m.inventory = append(*m.inventory, m.received)
+
 		date := m.executor.Get_req_time()
 
 		date_cal(m.received.Quantity, int(date), m.ware)
@@ -85,6 +92,7 @@ func (m *coop_ware) Ext_trans(port string, msg *system.SysMessage) {
 			}
 		}
 		fmt.Println("[Warehousing] Current inventory : ", total_tomato(m.inventory))
+
 
 		m.executor.Cur_state = "WARE"
 	}
@@ -111,7 +119,9 @@ type coop_management struct {
 	executor       *executor.BehaviorModelExecutor
 	storage_period int
 	inventory      *[]tomato
+
 	trash          []int
+
 	msg            *system.SysMessage
 }
 
@@ -123,9 +133,11 @@ func AM_management(instance_time, destruct_time float64, name, engine_name strin
 	m.inventory = inventory
 	//infor
 	m.storage_period = storage_period
+
 	for i := 0; i < 12; i++ {
 		m.trash = append(m.trash, 0)
 	}
+
 
 	//state
 	m.executor.Behaviormodel.Insert_state("IDLE", 1)
@@ -153,6 +165,7 @@ func (m *coop_management) Int_trans() {
 					if v.Period <= 0 {
 						(*m.inventory) = remove_tomato(m.inventory, k)
 						fmt.Println("보관기간 지나서 버림 : ", v.Quantity)
+
 						date := m.executor.Get_req_time()
 
 						date_cal(v.Quantity, int(date), m.trash)
@@ -175,6 +188,7 @@ func (m *coop_management) Int_trans() {
 							if n == 1 {
 							}
 						}
+
 					}
 				}
 
@@ -184,7 +198,6 @@ func (m *coop_management) Int_trans() {
 				}
 
 			}
-
 		}
 		m.executor.Cur_state = "CHECK"
 	} else {
