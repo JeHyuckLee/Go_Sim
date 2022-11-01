@@ -38,7 +38,7 @@ type SysExecutor struct {
 	parallel_obj       []*BehaviorModelExecutor
 }
 
-//생성자
+// 생성자
 func NewSysExecutor(_time_step float64, _sim_name, _sim_mode string) *SysExecutor {
 	se := &SysExecutor{}
 	se.Behaviormodel = model.NewBehaviorModel(_sim_name)
@@ -260,7 +260,7 @@ func (se *SysExecutor) Schedule() {
 	se.min_schedule_item = append([]*BehaviorModelExecutor{tuple_obj}, se.min_schedule_item...)
 
 	se.global_time += se.time_step
-	fmt.Println("global_time:", se.Get_global_time())
+	fmt.Println("global time : ", se.global_time)
 	se.Destory_entity()
 }
 

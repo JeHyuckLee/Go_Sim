@@ -1,8 +1,8 @@
-
 package main
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/jfcg/sorty/v2"
 )
@@ -22,7 +22,14 @@ func (t *tomato) Next_day() {
 }
 
 func remove_tomato(slice *[]tomato, s int) []tomato {
-	return append((*slice)[:s], (*slice)[s+1:]...)
+	if len(*slice) == 1 {
+		(*slice)[0].Quantity = 0
+		(*slice)[0].Period = 0
+		return *slice
+	} else {
+		return (*slice)[:s+copy((*slice)[s:], (*slice)[s+1:])]
+	}
+
 }
 
 func Sort_tomato(b *[]tomato) {
@@ -45,7 +52,7 @@ func Sales(n int, t *[]tomato) *[]tomato {
 		(*t) = remove_tomato(t, 0)
 		Sales(rest, t)
 	} else if (*t)[0].Quantity == n {
-		// t = remove_tomato(t, 0)
+		(*t) = remove_tomato(t, 0)
 		return t
 	} else {
 		(*t)[0].Quantity = (*t)[0].Quantity - n
@@ -60,4 +67,9 @@ func total_tomato(t *[]tomato) int {
 		total += v.Quantity
 	}
 	return total
+}
+
+func rand_crop(average float64, std float64) float64 {
+	rand_std := (rand.Float64() * std * 2) - std
+	return average - rand_std
 }

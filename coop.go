@@ -19,7 +19,6 @@ func CM_coop(instance_time, destruct_time float64, name, engine_name string, sto
 
 	coop := cm_coop{}
 
-
 	coop.am_ware = AM_ware(instance_time, destruct_time, name, engine_name, &coop.inventory)
 	coop.am_management = AM_management(instance_time, destruct_time, name, engine_name, storage_period, &coop.inventory)
 	coop.am_shipment = AM_shipment(instance_time, destruct_time, name, engine_name, &coop.inventory)
@@ -32,10 +31,10 @@ type coop_ware struct {
 	executor  *executor.BehaviorModelExecutor
 	inventory *[]tomato
 
-	ware      []int
+	ware []int
 
-	received  tomato
-	msg       *system.SysMessage
+	received tomato
+	msg      *system.SysMessage
 }
 
 func AM_ware(instance_time, destruct_time float64, name, engine_name string, inventory *[]tomato) *coop_ware {
@@ -48,11 +47,28 @@ func AM_ware(instance_time, destruct_time float64, name, engine_name string, inv
 	for i := 0; i < 12; i++ {
 		m.ware = append(m.ware, 0)
 	}
+	//
+	db := GetConnector()
+	defer db.Close()
 
+	err := db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 12; i++ {
+		results, err := db.Exec("UPDATE Simulate_Sales SET Warehousing_amount = ? WHERE Sales_date = ?", m.ware[i], i+1)
+		if err != nil {
+			panic(err.Error())
+		}
+		n, err := results.RowsAffected()
+		if n == 1 {
+		}
+	}
 
 	//statef
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	m.executor.Behaviormodel.Insert_state("WARE", 1)
+	m.executor.Behaviormodel.Insert_state("WARE", 0)
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -69,38 +85,13 @@ func (m *coop_ware) Ext_trans(port string, msg *system.SysMessage) {
 		m.received = data[0].(tomato)
 		*m.inventory = append(*m.inventory, m.received)
 
-		date := m.executor.Get_req_time()
-
-		date_cal(m.received.Quantity, int(date), m.ware)
-
-		//
-		db := GetConnector()
-		defer db.Close()
-
-		err := db.Ping()
-		if err != nil {
-			panic(err)
-		}
-
-		for i := 0; i < 12; i++ {
-			results, err := db.Exec("UPDATE Simulate_Sales SET Warehousing_amount = ? WHERE Sales_date = ?", m.ware[i], i+1)
-			if err != nil {
-				panic(err.Error())
-			}
-			n, err := results.RowsAffected()
-			if n == 1 {
-			}
-		}
-		fmt.Println("[Warehousing] Current inventory : ", total_tomato(m.inventory))
-
+		fmt.Println("[coop Warehousing] Current inventory : ", total_tomato(m.inventory))
 
 		m.executor.Cur_state = "WARE"
 	}
 }
 
 func (m *coop_ware) Output() *system.SysMessage {
-
-	fmt.Println("State: Warehousing in")
 
 	return nil
 }
@@ -120,9 +111,9 @@ type coop_management struct {
 	storage_period int
 	inventory      *[]tomato
 
-	trash          []int
+	trash []int
 
-	msg            *system.SysMessage
+	msg *system.SysMessage
 }
 
 func AM_management(instance_time, destruct_time float64, name, engine_name string, storage_period int, inventory *[]tomato) *coop_management {
@@ -138,6 +129,23 @@ func AM_management(instance_time, destruct_time float64, name, engine_name strin
 		m.trash = append(m.trash, 0)
 	}
 
+	db := GetConnector()
+	defer db.Close()
+
+	err := db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < 12; i++ {
+		results, err := db.Exec("UPDATE Simulate_Sales SET trash_amount = ? WHERE Sales_date = ?", m.trash[i], i+1)
+		if err != nil {
+			panic(err.Error())
+		}
+		n, err := results.RowsAffected()
+		if n == 1 {
+		}
+	}
 
 	//state
 	m.executor.Behaviormodel.Insert_state("IDLE", 1)
@@ -159,17 +167,15 @@ func (m *coop_management) Int_trans() {
 	if m.executor.Cur_state == "IDLE" {
 		if len((*m.inventory)) > 0 {
 			// Sort_tomato(m.inventory)
-
 			if (*m.inventory)[0].Period <= 0 {
 				for k, v := range *m.inventory {
-					if v.Period <= 0 {
+					if v.Period <= 0 && v.Quantity != 0 {
 						(*m.inventory) = remove_tomato(m.inventory, k)
-						fmt.Println("보관기간 지나서 버림 : ", v.Quantity)
 
-						date := m.executor.Get_req_time()
-
-						date_cal(v.Quantity, int(date), m.trash)
-
+						fmt.Println("[coop] 보관기간 지나서 버려짐 : ", v.Quantity)
+						fmt.Println("[coop] 남은 토마토 : ", total_tomato(m.inventory))
+						Sales_date := m.executor.Get_req_time()
+						month := date_month(int(Sales_date))
 						//
 						db := GetConnector()
 						defer db.Close()
@@ -179,16 +185,13 @@ func (m *coop_management) Int_trans() {
 							panic(err)
 						}
 
-						for i := 0; i < 12; i++ {
-							results, err := db.Exec("UPDATE Simulate_Sales SET trash_amount = ? WHERE Sales_date = ?", m.trash[i], i+1)
-							if err != nil {
-								panic(err.Error())
-							}
-							n, err := results.RowsAffected()
-							if n == 1 {
-							}
+						results, err := db.Exec("UPDATE Simulate_Sales SET trash_amount = ? WHERE Sales_date = ?", v.Quantity, month)
+						if err != nil {
+							panic(err.Error())
 						}
-
+						n, err := results.RowsAffected()
+						if n == 1 {
+						}
 					}
 				}
 
@@ -210,6 +213,7 @@ type coop_shipment struct {
 	executor         *executor.BehaviorModelExecutor
 	shipment_qantity int
 	inventory        *[]tomato
+	buy_log          []int
 	msg              *system.SysMessage
 }
 
@@ -220,9 +224,28 @@ func AM_shipment(instance_time, destruct_time float64, name, engine_name string,
 
 	//infor
 	m.inventory = inventory
+	for i := 0; i < 12; i++ {
+		m.buy_log = append(m.buy_log, 0)
+	}
+	db := GetConnector()
+	defer db.Close()
+
+	err := db.Ping()
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 12; i++ {
+		results, err := db.Exec("UPDATE Simulate_Sales SET Sales_amount = ? WHERE Sales_date = ?", m.buy_log[i], i+1)
+		if err != nil {
+			panic(err.Error())
+		}
+		n, err := results.RowsAffected()
+		if n == 1 {
+		}
+	}
 	//statef
 	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
-	m.executor.Behaviormodel.Insert_state("SHIPMENT", 1)
+	m.executor.Behaviormodel.Insert_state("SHIPMENT", 0)
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -236,23 +259,76 @@ func (m *coop_shipment) Ext_trans(port string, msg *system.SysMessage) {
 	if port == "shipment" {
 		m.executor.Cancel_rescheduling()
 		data := msg.Retrieve()
-		if len((*m.inventory)) > 0 {
-			m.shipment_qantity = data[0].(int)
-
-			fmt.Println("Shipment Quantity : ", m.shipment_qantity)
-
-			Sales(m.shipment_qantity, m.inventory)
-			fmt.Println("[Sales] Current Inventory : ", total_tomato(m.inventory))
-			m.executor.Cur_state = "SHIPMENT"
-		} else {
-			fmt.Println("재고가없어서 못팜")
-		}
-
+		m.shipment_qantity = data[0].(int)
+		m.executor.Cur_state = "SHIPMENT"
 	}
 }
 
 func (m *coop_shipment) Output() *system.SysMessage {
 	//check 에게 출력을 보내서 동작시킴
+	total := total_tomato(m.inventory)
+	if len((*m.inventory)) > 0 {
+
+		Sales_date := m.executor.Get_req_time()
+		month := date_month(int(Sales_date))
+		fmt.Println("salse date", Sales_date)
+		if m.shipment_qantity > total {
+			oversell := m.shipment_qantity - total
+
+			db := GetConnector()
+			defer db.Close()
+
+			err := db.Ping()
+			if err != nil {
+				panic(err)
+			}
+
+			results, err := db.Exec("UPDATE Simulate_Sales SET Oversell_request = Oversell_request + ? WHERE Sales_date = ?", oversell, month)
+			if err != nil {
+				panic(err.Error())
+			}
+			n, err := results.RowsAffected()
+			if n == 1 {
+			}
+
+			fmt.Println("[coop] ShipmentQuantity : ", total)
+			fmt.Println(total)
+
+			//
+
+			result, err := db.Exec("UPDATE Simulate_Sales SET Sales_amount = Sales_amount + ? WHERE Sales_date = ?", total, month)
+			if err != nil {
+				panic(err.Error())
+			}
+			a, err := result.RowsAffected()
+			if a == 1 {
+			}
+
+			Sales(total_tomato(m.inventory), m.inventory)
+		} else {
+			fmt.Println("[coop] Shipment Quantity : ", m.shipment_qantity)
+			fmt.Println(m.shipment_qantity)
+			db := GetConnector()
+			defer db.Close()
+
+			err := db.Ping()
+			if err != nil {
+				panic(err)
+			}
+
+			results, err := db.Exec("UPDATE Simulate_Sales SET Sales_amount = Sales_amount + ? WHERE Sales_date = ?", m.shipment_qantity, month)
+			if err != nil {
+				panic(err.Error())
+			}
+			n, err := results.RowsAffected()
+			if n == 1 {
+			}
+			Sales(m.shipment_qantity, m.inventory)
+		}
+		fmt.Println("[coop Sales] Current Inventory : ", total_tomato(m.inventory))
+		m.executor.Cur_state = "SHIPMENT"
+	}
+
 	return nil
 }
 

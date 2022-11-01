@@ -1,6 +1,7 @@
 package main
 
 import (
+	"evsim_golang/definition"
 	"evsim_golang/executor"
 	"evsim_golang/system"
 	"fmt"
@@ -9,26 +10,27 @@ import (
 // Seeding
 type buyer struct {
 	executor *executor.BehaviorModelExecutor
+	buyer    buyer_infor
 	buy      int
-
-	buy_log  []int
-
+	cnt      int
+	term     int
+	i        int
 	msg      *system.SysMessage
 }
 
-func AM_buyer(instance_time, destruct_time float64, name, engine_name string, buy int) *buyer {
+func AM_buyer(instance_time, destruct_time float64, name, engine_name string, buy buyer_infor) *buyer {
 	m := &buyer{}
 	m.executor = executor.NewExecutor(instance_time, destruct_time, name, engine_name)
 	m.executor.AbstractModel = m
-	m.buy = buy
+	m.i = 0
+	m.buyer = buy
+	m.cnt = buy.cnt
+	m.term = 100 / buy.cnt
 
-	for i := 0; i < 12; i++ {
-		m.buy_log = append(m.buy_log, 0)
-	}
-
-	m.executor.Behaviormodel.Insert_state("IDLE", 120)
+	m.executor.Behaviormodel.Insert_state("IDLE", definition.Infinite)
 
 	m.executor.Behaviormodel.Insert_state("BUY", 1) //나중에 멤버에게 입력받아서 집어넣어야함
+	m.executor.Behaviormodel.Insert_state("REQ", float64(m.term))
 	m.executor.Init_state("IDLE")
 
 	//port
@@ -39,56 +41,40 @@ func AM_buyer(instance_time, destruct_time float64, name, engine_name string, bu
 }
 
 func (m *buyer) Ext_trans(port string, msg *system.SysMessage) {
-	//파종이 필요하다고 요청이 옴
-	// if port == "seeding" {
-	// 	m.executor.Cancel_rescheduling()
-	// 	m.executor.Cur_state = "SEEDING"
-	// }
+
+	if port == "start" {
+		m.executor.Cancel_rescheduling()
+		fmt.Println("buyer Start")
+		m.executor.Cur_state = "BUY"
+	}
 }
 
 func (m *buyer) Output() *system.SysMessage {
 	//가능한 수확량선에서 필요한 만큼 파종을 함
-	fmt.Println("Buyer: buy a tomato : ", m.buy)
+	if m.executor.Cur_state == "BUY" {
+		m.i++
+		m.buy = int(rand_crop(m.buyer.aver, m.buyer.std))
+		fmt.Println("Buyer: buy a tomato : ", m.buy)
 
-
-	Sales_date := m.executor.Get_req_time()
-
-	date_cal(m.buy, int(Sales_date), m.buy_log)
-
-	//
-	db := GetConnector()
-	defer db.Close()
-
-	err := db.Ping()
-	if err != nil {
-		panic(err)
+		msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "buy")
+		msg.Insert(m.buy)
+		return msg
+	} else {
+		return nil
 	}
 
-	for i := 0; i < 12; i++ {
-		results, err := db.Exec("UPDATE Simulate_Sales SET Sales_amount = ? WHERE Sales_date = ?", m.buy_log[i], i+1)
-		if err != nil {
-			panic(err.Error())
-		}
-		n, err := results.RowsAffected()
-		if n == 1 {
-		}
-	}
-
-
-	msg := system.NewSysMessage(m.executor.Behaviormodel.CoreModel.Get_name(), "buy")
-	msg.Insert(m.buy)
-	return msg
 }
 
 func (m *buyer) Int_trans() {
 	//상태변화
 	if m.executor.Cur_state == "BUY" {
-		m.executor.Cur_state = "IDLE"
+		m.executor.Cur_state = "REQ"
+	} else if m.executor.Cur_state == "REQ" && m.i < m.cnt {
+		m.executor.Cur_state = "BUY"
 	} else {
 		m.executor.Cur_state = "IDLE"
 	}
 }
-
 
 func date_cal(amount int, date int, a []int) *[]int {
 	if date >= 0 && date < 31 {
@@ -116,6 +102,35 @@ func date_cal(amount int, date int, a []int) *[]int {
 	} else if date < 364 {
 		a[11] += amount
 	}
-
 	return &a
+}
+
+func date_month(date int) int {
+	if date >= 0 && date < 31 {
+		return 1
+	} else if date < 58 {
+		return 2
+	} else if date < 89 {
+		return 3
+	} else if date < 119 {
+		return 4
+	} else if date < 150 {
+		return 5
+	} else if date < 180 {
+		return 6
+	} else if date < 211 {
+		return 7
+	} else if date < 242 {
+		return 8
+	} else if date < 272 {
+		return 9
+	} else if date < 303 {
+		return 10
+	} else if date < 333 {
+		return 11
+	} else if date < 364 {
+		return 12
+	} else {
+		return 0
+	}
 }
