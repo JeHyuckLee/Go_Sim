@@ -4,6 +4,7 @@ import (
 	"evsim_golang/executor"
 	"fmt"
 	"runtime"
+	"strconv"
 	"time"
 
 	zmq "github.com/pebbe/zmq4"
@@ -30,14 +31,14 @@ func main() {
 	s, _ := zctx.NewSocket(zmq.REP)
 	s.Bind("tcp://*:5000")
 
-	// msg, _ := s.RecvMessage(0)
-	// storage_period, _ := strconv.Atoi(msg[0])
-	// changed_demand, _ := strconv.Atoi(msg[1])
-	// changed_suply, _ := strconv.Atoi(msg[2])
+	msg, _ := s.RecvMessage(0)
+	storage_period, _ := strconv.Atoi(msg[0])
+	changed_demand, _ := strconv.Atoi(msg[1])
+	changed_suply, _ := strconv.Atoi(msg[2])
 
-	storage_period := 25
-	changed_demand := 0
-	changed_suply := 0
+	// storage_period := 25
+	// changed_demand := 0
+	// changed_suply := 0
 	// 데이터 불러오기
 	db := GetConnector()
 	defer db.Close()
